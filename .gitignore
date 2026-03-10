@@ -1,0 +1,22 @@
+# Environment and secrets (do not commit)
+.env
+.env.local
+.env.*.local
+*.pem
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+*.sw?
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Backend data and secrets (when at repo root)
+backend/.data/
+backend/.ctfd_secret_key
+
+# Optional: frontend build output at root (if ever copied here)
+dist/
