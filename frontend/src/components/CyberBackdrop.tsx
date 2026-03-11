@@ -4,7 +4,31 @@ import { gsap } from 'gsap'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import crescentMoonImg from '../assets/crescent-moon.png'
 
-const STAR_COUNT = 120
+const STAR_COUNT = 260
+
+function useGalaxyfield() {
+  return useMemo(() => {
+    const list: { left: number; top: number; size: number; delay: number; duration: number; opacity: number }[] = []
+    const GALAXY_COUNT = 4
+
+    for (let i = 0; i < GALAXY_COUNT; i++) {
+      const left = 10 + Math.random() * 80
+      const top = 10 + Math.random() * 80
+      const size = 260 + Math.random() * 220
+
+      list.push({
+        left,
+        top,
+        size,
+        delay: Math.random() * 20,
+        duration: 40 + Math.random() * 40,
+        opacity: 0.16 + Math.random() * 0.14,
+      })
+    }
+
+    return list
+  }, [])
+}
 
 function useStarfield() {
   return useMemo(() => {
@@ -37,10 +61,12 @@ function useStarfield() {
 export function CyberBackdrop() {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const moonRef = useRef<HTMLDivElement | null>(null)
+  const extraMoonRef = useRef<HTMLDivElement | null>(null)
   const prefersReduced = usePrefersReducedMotion()
   const location = useLocation()
   const isLanding = location.pathname === '/'
   const stars = useStarfield()
+  const galaxies = useGalaxyfield()
 
   useEffect(() => {
     const root = rootRef.current
@@ -48,31 +74,34 @@ export function CyberBackdrop() {
 
     const ctx = gsap.context(() => {
       /* Small moon float on non-landing pages */
-      const moon = moonRef.current
-      if (moon) {
+      const moonEls = [moonRef.current, extraMoonRef.current].filter(Boolean) as HTMLDivElement[]
+      moonEls.forEach((moon, index) => {
+        const baseDelay = index * 0.7
         gsap.to(moon, {
-          y: '+=12',
-          duration: 4,
+          y: `+=${10 + index * 4}`,
+          duration: 4 + index,
           repeat: -1,
           yoyo: true,
           ease: 'sine.inOut',
+          delay: baseDelay,
         })
         gsap.to(moon, {
-          x: '+=8',
-          duration: 5,
+          x: `+=${7 + index * 3}`,
+          duration: 5 + index * 0.8,
           repeat: -1,
           yoyo: true,
           ease: 'sine.inOut',
-          delay: 0.5,
+          delay: baseDelay + 0.5,
         })
         gsap.to(moon, {
-          rotation: 8,
-          duration: 8,
+          rotation: 10 + index * 4,
+          duration: 9 + index * 2,
           repeat: -1,
           yoyo: true,
           ease: 'sine.inOut',
+          delay: baseDelay + 0.3,
         })
-      }
+      })
     }, root)
 
     return () => ctx.revert()
@@ -101,10 +130,32 @@ export function CyberBackdrop() {
           />
         ))}
       </div>
+      <div className="galaxy-layer">
+        {galaxies.map((g, i) => (
+          <div
+            key={i}
+            className="galaxy"
+            style={{
+              left: `${g.left}%`,
+              top: `${g.top}%`,
+              width: `${g.size}px`,
+              height: `${g.size * 0.7}px`,
+              animationDelay: `${g.delay}s`,
+              animationDuration: `${g.duration}s`,
+              opacity: g.opacity,
+            }}
+          />
+        ))}
+      </div>
       {!isLanding && (
-        <div className="global-moon" ref={moonRef} aria-hidden>
-          <img src={crescentMoonImg} alt="" role="presentation" />
-        </div>
+        <>
+          <div className="global-moon global-moon-primary" ref={moonRef} aria-hidden>
+            <img src={crescentMoonImg} alt="" role="presentation" />
+          </div>
+          <div className="global-moon global-moon-secondary" ref={extraMoonRef} aria-hidden>
+            <img src={crescentMoonImg} alt="" role="presentation" />
+          </div>
+        </>
       )}
     </div>
   )
