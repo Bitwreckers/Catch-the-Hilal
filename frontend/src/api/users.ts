@@ -29,7 +29,7 @@ export interface UserListResponse {
 export interface UserSolve {
   id: number
   challenge_id?: number
-  challenge?: { id: number; name: string }
+  challenge?: { id: number; name: string; category?: string }
   user_id: number
   team_id?: number | null
   date?: string
@@ -91,4 +91,13 @@ export async function getUserSolves(id: number): Promise<UserSolve[]> {
   })
   if (res.status === 404) return []
   return res.data.data ?? []
+}
+
+/** GET /api/v1/users/:id/fails — returns meta.count for wrong submission count. */
+export async function getUserFailsCount(id: number): Promise<number> {
+  const res = await apiClient.get<{ success: boolean; meta?: { count?: number } }>(`/api/v1/users/${id}/fails`, {
+    validateStatus: (s) => s === 200 || s === 404,
+  })
+  if (res.status === 404) return 0
+  return res.data.meta?.count ?? 0
 }

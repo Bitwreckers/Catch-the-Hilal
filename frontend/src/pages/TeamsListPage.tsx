@@ -1,10 +1,35 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getTeams, type TeamPublic } from '../api/teams'
+import { getTeams, type TeamPublic, type TeamListField } from '../api/teams'
 import { TableSkeleton } from '../components/TableSkeleton'
 
 const PER_PAGE_OPTIONS = [25, 50, 100] as const
+const FIELD_OPTIONS: { value: TeamListField; label: string }[] = [
+  { value: 'name', label: 'Name' },
+  { value: 'website', label: 'Website' },
+  { value: 'affiliation', label: 'Affiliation' },
+  { value: 'country', label: 'Country' },
+]
+
+function SearchIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  )
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  )
+}
 
 export function TeamsListPage() {
   const { user, loading: authLoading } = useAuth()
@@ -15,14 +40,17 @@ export function TeamsListPage() {
   const [perPage, setPerPage] = useState(50)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchField, setSearchField] = useState<TeamListField>('name')
+  const [submittedQuery, setSubmittedQuery] = useState('')
+  const [submittedField, setSubmittedField] = useState<TeamListField>('name')
 
-  useEffect(() => {
-    let cancelled = false
+  const fetchTeams = useCallback(() => {
     setLoading(true)
     setError(null)
-    getTeams(page, perPage)
+    const filters = submittedQuery.trim() ? { q: submittedQuery.trim(), field: submittedField } : undefined
+    getTeams(page, perPage, filters)
       .then((res) => {
-        if (cancelled) return
         setTeams(res.data)
         const pagination = res.meta?.pagination
         if (pagination) {
@@ -30,18 +58,24 @@ export function TeamsListPage() {
           setTotal(pagination.total ?? 0)
         }
       })
-      .catch(() => {
-        if (!cancelled) setError('Failed to load teams.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [page, perPage])
+      .catch(() => setError('Failed to load teams.'))
+      .finally(() => setLoading(false))
+  }, [page, perPage, submittedQuery, submittedField])
+
+  useEffect(() => {
+    fetchTeams()
+  }, [fetchTeams])
 
   useEffect(() => {
     setPage(1)
-  }, [perPage])
+  }, [perPage, submittedQuery, submittedField])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmittedQuery(searchQuery.trim())
+    setSubmittedField(searchField)
+    setPage(1)
+  }
 
   if (!authLoading && !user) {
     return (
@@ -56,28 +90,41 @@ export function TeamsListPage() {
 
   return (
     <div className="page teams-list-page">
-      <header className="page-header teams-list-page-header">
-        <div>
-          <h1>All Teams</h1>
-          <p>Browse teams. Click a team to see its members.</p>
-        </div>
-        <div className="header-actions-row">
-          <label className="per-page-select">
-            <span className="per-page-label">Per page</span>
-            <select
-              value={perPage}
-              onChange={(e) => setPerPage(Number(e.target.value))}
-              aria-label="Teams per page"
-              className="per-page-select-input"
-            >
-              {PER_PAGE_OPTIONS.map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-          </label>
+      <div className="page-full-width teams-list-full-width">
+        <header className="page-header teams-list-page-header">
+          <div>
+            <h1>Teams</h1>
+            <p>Browse teams. Click a team to see its members.</p>
+          </div>
           <Link to="/team" className="btn ghost">My team</Link>
-        </div>
-      </header>
+        </header>
+
+        <form className="teams-search-bar" onSubmit={handleSearch}>
+        <label className="teams-search-field-label">
+          <select
+            value={searchField}
+            onChange={(e) => setSearchField(e.target.value as TeamListField)}
+            aria-label="Search field"
+            className="teams-search-field-select"
+          >
+            {FIELD_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <span className="teams-search-field-arrow" aria-hidden>▼</span>
+        </label>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search for matching teams"
+          className="teams-search-input"
+          aria-label="Search for matching teams"
+        />
+        <button type="submit" className="teams-search-btn" aria-label="Search">
+          <SearchIcon />
+        </button>
+      </form>
 
       {loading && (
         <TableSkeleton columns={4} rows={12} className="teams-table-skeleton" />
@@ -91,31 +138,31 @@ export function TeamsListPage() {
 
       {!loading && !error && (
         <>
-          <div className="data-table-wrap data-table-wrap-teams">
-            <table className="data-table">
+          <div className="teams-table-wrap">
+            <table className="teams-table">
               <thead>
                 <tr>
-                  <th>Team</th>
-                  <th>Website</th>
-                  <th>Affiliation</th>
-                  <th>Country</th>
+                  <th>TEAM</th>
+                  <th>WEBSITE</th>
+                  <th>AFFILIATION</th>
+                  <th>COUNTRY</th>
                 </tr>
               </thead>
               <tbody>
                 {teams.map((t) => (
                   <tr key={t.id}>
                     <td>
-                      <Link to={`/teams/${t.id}`} className="data-table-link">
+                      <Link to={`/teams/${t.id}`} className="teams-table-link">
                         {t.name}
                       </Link>
                     </td>
                     <td>
                       {t.website ? (
-                        <a href={t.website.startsWith('http') ? t.website : `https://${t.website}`} target="_blank" rel="noopener noreferrer" className="data-table-link data-table-link-external">
-                          {t.website}
+                        <a href={t.website.startsWith('http') ? t.website : `https://${t.website}`} target="_blank" rel="noopener noreferrer" className="teams-table-external" title={t.website}>
+                          <ExternalLinkIcon />
                         </a>
                       ) : (
-                        '—'
+                        ''
                       )}
                     </td>
                     <td>{t.affiliation ?? '—'}</td>
@@ -124,38 +171,56 @@ export function TeamsListPage() {
                 ))}
                 {teams.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="data-table-empty">No teams found.</td>
+                    <td colSpan={4} className="teams-table-empty">No teams found.</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
 
-          {totalPages > 1 && (
-            <nav className="pagination" aria-label="Teams pagination">
-              <button
-                type="button"
-                className="btn ghost pagination-btn"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </button>
-              <span className="pagination-info">
-                Page {page} of {totalPages} ({total} total)
-              </span>
-              <button
-                type="button"
-                className="btn ghost pagination-btn"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </button>
+          {(totalPages > 1 || total > perPage) && (
+            <nav className="pagination teams-pagination" aria-label="Teams pagination">
+              <label className="teams-per-page">
+                <span className="teams-per-page-label">Per page</span>
+                <select
+                  value={perPage}
+                  onChange={(e) => setPerPage(Number(e.target.value))}
+                  aria-label="Teams per page"
+                  className="teams-per-page-select"
+                >
+                  {PER_PAGE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </label>
+              {totalPages > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="btn ghost pagination-btn"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+                  <span className="pagination-info">
+                    Page {page} of {totalPages} ({total} total)
+                  </span>
+                  <button
+                    type="button"
+                    className="btn ghost pagination-btn"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Next
+                  </button>
+                </>
+              )}
             </nav>
           )}
         </>
       )}
+      </div>
     </div>
   )
 }

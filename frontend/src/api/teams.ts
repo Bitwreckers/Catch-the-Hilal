@@ -128,14 +128,24 @@ export interface PaginationMeta {
   total: number
 }
 
+export type TeamListField = 'name' | 'website' | 'country' | 'affiliation'
+
+export interface GetTeamsFilters {
+  q?: string
+  field?: TeamListField
+}
+
 /** GET /api/v1/teams — paginated list. */
 export async function getTeams(
   page = 1,
-  perPage = 50
+  perPage = 50,
+  filters?: GetTeamsFilters
 ): Promise<{ data: TeamPublic[]; meta: { pagination: PaginationMeta } }> {
   const params = new URLSearchParams()
   params.set('page', String(page))
   params.set('per_page', String(Math.min(perPage, 100)))
+  if (filters?.q) params.set('q', filters.q)
+  if (filters?.field) params.set('field', filters.field)
   const res = await apiClient.get<{
     success: boolean
     data: TeamPublic[]
@@ -156,6 +166,23 @@ export async function getTeamById(id: number): Promise<TeamPublic | null> {
   })
   if (res.status === 404) return null
   return res.data.data ?? null
+}
+
+export interface TeamSolve {
+  id: number
+  challenge_id?: number
+  challenge?: { id: number; name: string; category?: string }
+  date?: string
+  value?: number
+}
+
+/** GET /api/v1/teams/:id/solves — team's solves. */
+export async function getTeamSolves(id: number): Promise<TeamSolve[]> {
+  const res = await apiClient.get<{ success: boolean; data: TeamSolve[] }>(`/api/v1/teams/${id}/solves`, {
+    validateStatus: (s) => s === 200 || s === 404,
+  })
+  if (res.status === 404) return []
+  return res.data.data ?? []
 }
 
 

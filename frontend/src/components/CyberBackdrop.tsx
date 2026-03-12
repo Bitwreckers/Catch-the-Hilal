@@ -4,7 +4,7 @@ import { gsap } from 'gsap'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import crescentMoonImg from '../assets/crescent-moon.png'
 
-const STAR_COUNT = 260
+const STAR_COUNT = 480
 
 function useGalaxyfield() {
   return useMemo(() => {
@@ -32,7 +32,7 @@ function useGalaxyfield() {
 
 function useStarfield() {
   return useMemo(() => {
-    const list: { left: number; top: number; size: number; delay: number; duration: number }[] = []
+    const list: { left: number; top: number; size: number; delay: number; duration: number; glow: boolean }[] = []
     const seen = new Set<string>()
     for (let i = 0; i < STAR_COUNT; i++) {
       let left = Math.floor(Math.random() * 100)
@@ -46,12 +46,15 @@ function useStarfield() {
         tries++
       }
       seen.add(key)
+      const r = Math.random()
+      const size = r < 0.5 ? 1 : r < 0.8 ? 2 : r < 0.94 ? 3 : 4
       list.push({
         left,
         top,
-        size: Math.random() > 0.7 ? 2 : 1,
-        delay: Math.random() * 4,
-        duration: 3 + Math.random() * 4,
+        size,
+        delay: Math.random() * 5,
+        duration: 3 + Math.random() * 5,
+        glow: Math.random() < 0.2,
       })
     }
     return list
@@ -118,7 +121,7 @@ export function CyberBackdrop() {
         {stars.map((s, i) => (
           <span
             key={i}
-            className="global-star"
+            className={`global-star ${s.glow ? 'global-star--glow' : ''}`}
             style={{
               left: `${s.left}%`,
               top: `${s.top}%`,
