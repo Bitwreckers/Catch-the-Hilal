@@ -162,8 +162,11 @@ def clear_standings():
     cache.delete_memoized(get_team_score)
     cache.delete_memoized(get_team_place)
 
-    # Clear out HTTP request responses
-    cache.delete(make_cache_key(path=api.name + "." + ScoreboardList.endpoint))
+    # Clear out HTTP request responses (scoreboard caches by view + admin)
+    base = make_cache_key(path=api.name + "." + ScoreboardList.endpoint)
+    cache.delete(base)
+    for v, a in [("", "False"), ("", "True"), ("admin", "False"), ("admin", "True")]:
+        cache.delete(f"{base}::view={v}::admin={a}")
     cache.delete(make_cache_key(path=api.name + "." + ScoreboardDetail.endpoint))
     cache.delete_memoized(ScoreboardList.get)
     cache.delete_memoized(ScoreboardDetail.get)

@@ -10,6 +10,28 @@ import jsLogoImg from '../assets/jslogo.png'
 
 const FALLBACK_START = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString()
 
+type CountdownState =
+  | { mode: 'starts'; target: string; label: string }
+  | { mode: 'ends'; target: string; label: string }
+  | { mode: 'ended'; label: string }
+
+function computeCountdownState(start: string | null, end: string | null): CountdownState {
+  const now = Date.now()
+  const startMs = start ? new Date(start).getTime() : 0
+  const endMs = end ? new Date(end).getTime() : 0
+
+  if (start && startMs > now) {
+    return { mode: 'starts', target: start, label: 'Event starts in' }
+  }
+  if (end && endMs > now) {
+    return { mode: 'ends', target: end, label: 'Event ends in' }
+  }
+  if ((start && startMs <= now) || (end && endMs <= now)) {
+    return { mode: 'ended', label: 'Event has ended' }
+  }
+  return { mode: 'starts', target: FALLBACK_START, label: 'Event starts in' }
+}
+
 /* Four moons at the corner positions; some flipped, some with scroll parallax */
 const MOON_POSITIONS: {
   className: string
@@ -28,26 +50,30 @@ export function LandingPage() {
   const heroRef = useRef<HTMLDivElement | null>(null)
   const moonsRef = useRef<HTMLDivElement | null>(null)
   const prefersReduced = usePrefersReducedMotion()
-  const [startTime, setStartTime] = useState<string>(
-    () => import.meta.env.VITE_CTF_START_TIME || FALLBACK_START
+  const [ctfStart, setCtfStart] = useState<string | null>(() =>
+    import.meta.env.VITE_CTF_START_TIME || null
   )
+  const [ctfEnd, setCtfEnd] = useState<string | null>(null)
 
-  const fetchStartTime = () => {
+  const countdownState = computeCountdownState(ctfStart, ctfEnd)
+
+  const fetchCtfTime = () => {
     getCtfTime()
-      .then(({ start }) => {
-        if (start) setStartTime(start)
+      .then(({ start, end }) => {
+        if (start != null) setCtfStart(start)
+        if (end != null) setCtfEnd(end)
       })
       .catch(() => {})
   }
 
   useEffect(() => {
-    fetchStartTime()
-    const retry = setTimeout(fetchStartTime, 1500)
+    fetchCtfTime()
+    const retry = setTimeout(fetchCtfTime, 1500)
     return () => clearTimeout(retry)
   }, [])
 
   useEffect(() => {
-    const onFocus = () => fetchStartTime()
+    const onFocus = () => fetchCtfTime()
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
   }, [])
@@ -289,16 +315,18 @@ export function LandingPage() {
               >
                 Register
               </button>
-              <button
-                className="btn ghost hero-cta-challenges"
-                onClick={() => navigate('/challenges')}
-              >
-                View Challenges
-              </button>
             </div>
             <div className="hero-countdown">
-              <h2>Event starts in</h2>
-              <CountdownTimer target={startTime} />
+              {countdownState && (
+                <>
+                  <h2>{countdownState.label}</h2>
+                  {countdownState.mode === 'ended' ? (
+                    <p className="hero-countdown-ended">Event has ended</p>
+                  ) : (
+                    <CountdownTimer target={countdownState.target} />
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

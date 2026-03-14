@@ -12,6 +12,7 @@ interface ChallengeDetails {
   id: number
   name: string
   description: string
+  description_html?: string
   category: string
   value: number
   solved_by_me?: boolean
@@ -19,6 +20,12 @@ interface ChallengeDetails {
   files?: string[]
   tags?: string[]
   topics?: Array<{ topic_id?: number; value?: string }>
+  attribution?: string
+  attribution_html?: string
+  connection_info?: string
+  position?: number
+  max_attempts?: number
+  attempts?: number
 }
 
 type FlagStatus = 'correct' | 'incorrect' | 'already_solved' | 'partial' | 'ratelimited' | null
@@ -45,6 +52,7 @@ export function ChallengeDetailPage() {
         id: data.id,
         name: data.name,
         description: data.description ?? '',
+        description_html: data.description_html,
         category: data.category ?? '',
         value: data.value ?? data.points ?? 0,
         solved_by_me: Boolean(data.solved_by_me),
@@ -52,6 +60,12 @@ export function ChallengeDetailPage() {
         files: Array.isArray(data.files) ? data.files : [],
         tags: Array.isArray(data.tags) ? data.tags : [],
         topics: Array.isArray(data.topics) ? data.topics : [],
+        attribution: data.attribution,
+        attribution_html: data.attribution_html,
+        connection_info: data.connection_info,
+        position: data.position,
+        max_attempts: data.max_attempts,
+        attempts: data.attempts,
       })
     } catch {
       setChallenge(null)
@@ -159,24 +173,73 @@ export function ChallengeDetailPage() {
   const files = challenge.files ?? []
   const tags = challenge.tags ?? []
   const topics = challenge.topics ?? []
-
+  const connInfo = challenge.connection_info?.trim()
+  const maxAttempts = challenge.max_attempts ?? 0
+  const attempts = challenge.attempts ?? 0
   return (
     <div className="page challenge-detail-page challenge-detail-page-ready">
-      <header className="challenge-detail-header">
+      <div className="page-full-width">
+      <header className="challenge-detail-header challenge-detail-header-centered">
+        <h1 className="challenge-detail-name">{challenge.name}</h1>
+        <p className="challenge-detail-value">{challenge.value} points</p>
         <div className="challenge-detail-meta">
           <span className="challenge-detail-category">{challenge.category}</span>
-          <span className="challenge-detail-points">{challenge.value} pts</span>
+          {challenge.position != null && challenge.position > 0 && (
+            <span className="challenge-detail-position">Position #{challenge.position}</span>
+          )}
           {isSolved && <span className="challenge-detail-solved-badge">Solved</span>}
         </div>
-        <h1>{challenge.name}</h1>
       </header>
 
+      {challenge.attribution_html && (
+        <section className="challenge-attribution-section">
+          <div
+            className="challenge-attribution-body"
+            dangerouslySetInnerHTML={{ __html: challenge.attribution_html }}
+          />
+        </section>
+      )}
+
       <section className="challenge-description-card">
-        <h2 className="challenge-description-title">Description</h2>
         <div className="challenge-description-body">
-          {challenge.description || <p className="challenge-no-description">No description provided.</p>}
+          {challenge.description_html ? (
+            <div dangerouslySetInnerHTML={{ __html: challenge.description_html }} />
+          ) : challenge.description ? (
+            <div style={{ whiteSpace: 'pre-wrap' }}>{challenge.description}</div>
+          ) : (
+            <p className="challenge-no-description">No description provided.</p>
+          )}
         </div>
       </section>
+
+      {connInfo && (
+        <section className="challenge-connection-section">
+          <h3 className="challenge-section-label">Connection Info</h3>
+          <div className="challenge-connection-body">
+            {connInfo.startsWith('http') ? (
+              <a
+                href={connInfo}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="challenge-connection-link"
+              >
+                Open connection
+              </a>
+            ) : (
+              <code className="challenge-connection-code">{connInfo}</code>
+            )}
+            {!connInfo.startsWith('http') && (
+              <button
+                type="button"
+                className="btn ghost challenge-connection-copy"
+                onClick={() => navigator.clipboard?.writeText(connInfo)}
+              >
+                Copy
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       {files.length > 0 && (
         <section className="challenge-extras-section challenge-files-section">
@@ -243,7 +306,11 @@ export function ChallengeDetailPage() {
                   {h.cost > 0 && <span className="challenge-hint-cost">{h.cost} pts</span>}
                 </div>
                 {h.content != null ? (
-                  <div className="challenge-hint-content">{h.content}</div>
+                  typeof h.content === 'string' && h.content.includes('<') ? (
+                    <div className="challenge-hint-content" dangerouslySetInnerHTML={{ __html: h.content }} />
+                  ) : (
+                    <div className="challenge-hint-content">{String(h.content)}</div>
+                  )
                 ) : (
                   <button
                     type="button"
@@ -258,6 +325,12 @@ export function ChallengeDetailPage() {
             ))}
           </ul>
         </section>
+      )}
+
+      {maxAttempts > 0 && !isSolved && (
+        <p className="challenge-max-attempts">
+          Attempts: {attempts}/{maxAttempts}
+        </p>
       )}
 
       <section className="challenge-submit-section">
@@ -299,6 +372,7 @@ export function ChallengeDetailPage() {
       <p className="challenge-detail-back">
         <Link to="/challenges">← Back to Challenges</Link>
       </p>
+      </div>
     </div>
   )
 }

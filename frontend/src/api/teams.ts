@@ -133,6 +133,7 @@ export type TeamListField = 'name' | 'website' | 'country' | 'affiliation'
 export interface GetTeamsFilters {
   q?: string
   field?: TeamListField
+  viewAdmin?: boolean
 }
 
 /** GET /api/v1/teams — paginated list. */
@@ -146,14 +147,25 @@ export async function getTeams(
   params.set('per_page', String(Math.min(perPage, 100)))
   if (filters?.q) params.set('q', filters.q)
   if (filters?.field) params.set('field', filters.field)
+  if (filters?.viewAdmin) params.set('view', 'admin')
   const res = await apiClient.get<{
-    success: boolean
-    data: TeamPublic[]
-    meta: { pagination: PaginationMeta }
-  }>(`/api/v1/teams?${params.toString()}`)
+    success?: boolean
+    data?: TeamPublic[] | unknown
+    meta?: { pagination: PaginationMeta }
+  }>(`/api/v1/teams?${params.toString()}`, {
+    validateStatus: (s) => s === 200 || s === 404,
+  })
+  if (res.status === 404) {
+    return {
+      data: [],
+      meta: { pagination: { page: 1, next: null, prev: null, pages: 1, per_page: perPage, total: 0 } },
+    }
+  }
+  const rawData = res.data?.data
+  const data = Array.isArray(rawData) ? rawData : []
   return {
-    data: res.data.data ?? [],
-    meta: res.data.meta ?? {
+    data,
+    meta: res.data?.meta ?? {
       pagination: { page: 1, next: null, prev: null, pages: 1, per_page: perPage, total: 0 },
     },
   }
@@ -171,7 +183,7 @@ export async function getTeamById(id: number): Promise<TeamPublic | null> {
 export interface TeamSolve {
   id: number
   challenge_id?: number
-  challenge?: { id: number; name: string; category?: string }
+  challenge?: { id: number; name: string; category?: string; value?: number }
   date?: string
   value?: number
 }

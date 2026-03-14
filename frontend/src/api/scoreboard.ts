@@ -1,8 +1,15 @@
 import { apiClient } from './client'
 
 export async function getScoreboard() {
-  const res = await apiClient.get('/api/v1/scoreboard')
-  return res.data.data
+  const res = await apiClient.get<{ success?: boolean; data?: unknown }>(
+    '/api/v1/scoreboard?view=admin',
+    {
+      validateStatus: (s) => s === 200 || s === 404,
+    }
+  )
+  if (res.status === 404) return []
+  const raw = res.data?.data
+  return Array.isArray(raw) ? raw : []
 }
 
 export async function getScoreboardSummary() {

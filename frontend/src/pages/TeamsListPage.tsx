@@ -48,7 +48,9 @@ export function TeamsListPage() {
   const fetchTeams = useCallback(() => {
     setLoading(true)
     setError(null)
-    const filters = submittedQuery.trim() ? { q: submittedQuery.trim(), field: submittedField } : undefined
+    const filters = submittedQuery.trim()
+      ? { q: submittedQuery.trim(), field: submittedField, viewAdmin: true }
+      : { viewAdmin: true }
     getTeams(page, perPage, filters)
       .then((res) => {
         setTeams(res.data)

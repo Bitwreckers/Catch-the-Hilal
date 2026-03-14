@@ -33,8 +33,14 @@ function buildPartialChallenge(initial: ChallengeModalInitialData): ChallengeDet
     points: initial.value,
     solved_by_me: initial.solved,
     description: undefined,
+    description_html: undefined,
     files: [],
     connection_info: undefined,
+    attribution: undefined,
+    attribution_html: undefined,
+    position: undefined,
+    max_attempts: undefined,
+    attempts: 0,
     solves: 0,
   }
 }
@@ -177,41 +183,73 @@ export function ChallengeModal({ challengeId, onClose, onSolved, initialData }: 
           {activeTab === 'challenge' ? (
             <>
               <h2 id="challenge-modal-title" className="challenge-modal-title">{challenge.name}</h2>
-              <p className="challenge-modal-points">{challenge.value ?? challenge.points ?? 0}</p>
+              <p className="challenge-modal-points">{challenge.value ?? challenge.points ?? 0} points</p>
+
+              {challenge.attribution_html && (
+                <div
+                  className="challenge-modal-attribution"
+                  dangerouslySetInnerHTML={{ __html: challenge.attribution_html }}
+                />
+              )}
+
               <div className="challenge-modal-description">
                 {detailsLoading ? (
                   <p className="challenge-modal-description-text challenge-modal-description-text--muted">
                     <span className="challenge-modal-loading-spinner challenge-modal-loading-spinner--inline" aria-hidden />
                     Loading...
                   </p>
-                ) : challenge.description && typeof challenge.description === 'string' ? (
+                ) : (challenge.description_html ?? challenge.description) ? (
                   <div
                     className="challenge-modal-description-text"
-                    dangerouslySetInnerHTML={{ __html: challenge.description }}
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        typeof (challenge.description_html ?? challenge.description) === 'string'
+                          ? (challenge.description_html ?? challenge.description)!
+                          : '',
+                    }}
                   />
                 ) : (
                   <p className="challenge-modal-description-text challenge-modal-description-text--muted">No description.</p>
                 )}
               </div>
 
-              {!detailsLoading && (
+              {!detailsLoading && connectionInfo && (
                 <section className="challenge-modal-section">
-                  <h3 className="challenge-modal-section-title">Instance Info</h3>
-                  <button
-                    type="button"
-                    className="challenge-modal-instance-btn"
-                    disabled={!connectionInfo || connectionInfo === ''}
-                    onClick={() => {
-                      if (connectionInfo && (connectionInfo.startsWith('http') || connectionInfo.startsWith('nc '))) {
-                        if (connectionInfo.startsWith('http')) window.open(connectionInfo, '_blank')
-                        else navigator.clipboard?.writeText(connectionInfo)
-                      }
-                    }}
-                  >
-                    Launch an instance
-                  </button>
+                  <h3 className="challenge-modal-section-title">Connection Info</h3>
+                  <div className="challenge-modal-connection-wrap">
+                    {connectionInfo.startsWith('http') ? (
+                      <a
+                        href={connectionInfo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="challenge-modal-connection-link"
+                      >
+                        Open connection
+                      </a>
+                    ) : (
+                      <>
+                        <code className="challenge-modal-connection-code">{connectionInfo}</code>
+                        <button
+                          type="button"
+                          className="btn ghost challenge-modal-connection-copy"
+                          onClick={() => navigator.clipboard?.writeText(connectionInfo)}
+                        >
+                          Copy
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </section>
               )}
+
+              {!detailsLoading &&
+                typeof challenge.max_attempts === 'number' &&
+                challenge.max_attempts > 0 &&
+                !isSolved && (
+                  <p className="challenge-modal-attempts">
+                    Attempts: {challenge.attempts ?? 0}/{challenge.max_attempts}
+                  </p>
+                )}
 
               {!detailsLoading && files.length > 0 && (
                 <section className="challenge-modal-section">
@@ -296,7 +334,11 @@ export function ChallengeModal({ challengeId, onClose, onSolved, initialData }: 
                       ) : (
                         <span>{s.name}</span>
                       )}
-                      <span className="challenge-modal-solve-date">{s.date}</span>
+                      <span className="challenge-modal-solve-date">
+                        {s.date
+                          ? new Date(s.date).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })
+                          : '—'}
+                      </span>
                     </li>
                   ))}
                 </ul>

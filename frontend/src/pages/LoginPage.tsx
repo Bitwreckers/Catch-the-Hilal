@@ -1,12 +1,11 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { Link } from 'react-router-dom'
 import { login } from '../api/auth'
 
+const REDIRECT_AFTER_LOGIN = '/challenges'
+
 export function LoginPage() {
-  const navigate = useNavigate()
-  const { refresh } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,8 +17,7 @@ export function LoginPage() {
     setError(null)
     try {
       await login({ name: username, password })
-      await refresh()
-      navigate('/challenges')
+      window.location.replace(REDIRECT_AFTER_LOGIN)
     } catch (err: any) {
       setError(err?.message ?? 'Failed to login')
     } finally {

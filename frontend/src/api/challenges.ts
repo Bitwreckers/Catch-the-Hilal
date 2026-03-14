@@ -1,8 +1,13 @@
 import { apiClient } from './client'
 
 export async function getChallenges() {
-  const res = await apiClient.get('/api/v1/challenges')
-  return res.data.data
+  const res = await apiClient.get<{ success?: boolean; data?: unknown }>(
+    '/api/v1/challenges?view=admin',
+    { validateStatus: (s) => s === 200 || s === 404 }
+  )
+  if (res.status === 404) return []
+  const raw = res.data?.data
+  return Array.isArray(raw) ? raw : []
 }
 
 export interface ChallengeHint {
@@ -16,6 +21,7 @@ export interface ChallengeDetailResponse {
   id: number
   name: string
   description?: string
+  description_html?: string
   category?: string
   value?: number
   points?: number
@@ -24,6 +30,12 @@ export interface ChallengeDetailResponse {
   files?: string[]
   tags?: string[]
   topics?: Array<{ topic_id?: number; value?: string }>
+  attribution?: string
+  attribution_html?: string
+  connection_info?: string
+  position?: number
+  max_attempts?: number
+  attempts?: number
   [key: string]: unknown
 }
 

@@ -48,7 +48,9 @@ export function UsersPage() {
   const fetchUsers = useCallback(() => {
     setLoading(true)
     setError(null)
-    const filters = submittedQuery.trim() ? { q: submittedQuery.trim(), field: submittedField } : undefined
+    const filters = submittedQuery.trim()
+      ? { q: submittedQuery.trim(), field: submittedField, viewAdmin: true }
+      : { viewAdmin: true }
     getUsers(page, perPage, filters)
       .then((res) => {
         setUsers(res.data)

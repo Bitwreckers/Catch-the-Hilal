@@ -131,63 +131,30 @@ export function UserProfilePage() {
 
   const score = profile.score ?? 0
   const place = profile.place != null ? profile.place : null
+  const teamName = profile.team_name ?? (profile.team_id != null ? `Team #${profile.team_id}` : null)
 
   return (
     <div className="page user-profile-page">
-      <header className="page-header user-profile-header">
-        <nav className="breadcrumb">
+      <div className="page-full-width">
+      <header className="page-header user-profile-header user-profile-header-centered">
+        <nav className="breadcrumb user-profile-breadcrumb">
           <Link to="/users">Users</Link>
           <span className="breadcrumb-sep">/</span>
           <span>{profile.name}</span>
         </nav>
-        <h1>{profile.name}</h1>
-        <p className="user-profile-subtitle">Public profile</p>
+        <h1 className="user-profile-name">{profile.name}</h1>
+        {teamName && (
+          profile.team_id != null
+            ? <Link to={`/teams/${profile.team_id}`} className="user-profile-team-tag" title={profile.team_name ?? undefined}>
+                {profile.team_name ?? teamName}
+              </Link>
+            : <span className="user-profile-team-tag">{teamName}</span>
+        )}
+        {place != null && (
+          <p className="user-profile-stat">{place}th place</p>
+        )}
+        <p className="user-profile-stat">{score} points</p>
       </header>
-
-      <section className="user-profile-card profile-card">
-        <dl className="profile-dl">
-          <dt>Score</dt>
-          <dd>{score} pts</dd>
-          {place != null && (
-            <>
-              <dt>Place</dt>
-              <dd>#{place}</dd>
-            </>
-          )}
-          {profile.website && (
-            <>
-              <dt>Website</dt>
-              <dd>
-                <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" rel="noopener noreferrer" className="data-table-link data-table-link-external">
-                  {profile.website}
-                </a>
-              </dd>
-            </>
-          )}
-          {profile.affiliation && (
-            <>
-              <dt>Affiliation</dt>
-              <dd>{profile.affiliation}</dd>
-            </>
-          )}
-          {profile.country && (
-            <>
-              <dt>Country</dt>
-              <dd>{profile.country}</dd>
-            </>
-          )}
-          {profile.team_id != null && (
-            <>
-              <dt>Team</dt>
-              <dd>
-                <Link to={`/teams/${profile.team_id}`} className="data-table-link" title={profile.team_name ?? undefined}>
-                  Team #{profile.team_id}
-                </Link>
-              </dd>
-            </>
-          )}
-        </dl>
-      </section>
 
       <section className="user-profile-solves">
         <h2 className="solves-section-title">Solves</h2>
@@ -217,7 +184,7 @@ export function UserProfilePage() {
                         </Link>
                       </td>
                       <td>{s.challenge?.category ?? '—'}</td>
-                      <td>{s.value ?? '—'}</td>
+                      <td>{s.challenge?.value ?? s.value ?? '—'}</td>
                       <td>{s.date ? new Date(s.date).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' }) : '—'}</td>
                     </tr>
                   ))}
@@ -278,6 +245,7 @@ export function UserProfilePage() {
 
       <div className="user-profile-actions">
         <Link to="/users" className="btn ghost">Back to users</Link>
+      </div>
       </div>
     </div>
   )

@@ -1590,6 +1590,13 @@ p,
   font-weight: 500;
 }
 
+.hero-countdown-ended {
+  font-size: 1rem;
+  color: var(--accent-gold-soft);
+  margin: 0;
+  letter-spacing: 0.08em;
+}
+
 .scroll-indicator {
   position: absolute;
   left: 50%;
@@ -2751,6 +2758,53 @@ button.challenge-card {
   cursor: not-allowed;
 }
 
+.challenge-modal-attribution {
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  opacity: 0.92;
+}
+
+.challenge-modal-connection-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.challenge-modal-connection-link {
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+
+.challenge-modal-connection-link:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.challenge-modal-connection-code {
+  display: block;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: ui-monospace, monospace;
+  flex: 1;
+  min-width: 0;
+}
+
+.challenge-modal-connection-copy {
+  color: #fff;
+  padding: 8px 16px;
+}
+
+.challenge-modal-attempts {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
 .challenge-modal-files-label {
   margin: 0 0 8px;
   font-size: 0.85rem;
@@ -3284,6 +3338,95 @@ button.challenge-card {
   font-size: 1.5rem;
 }
 
+.challenge-detail-header-centered {
+  text-align: center;
+}
+
+.challenge-detail-header-centered .challenge-detail-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin: 0 0 8px;
+}
+
+.challenge-detail-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--accent-gold-soft);
+  margin: 0 0 12px;
+}
+
+.challenge-detail-position {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.challenge-attribution-section {
+  margin-bottom: 20px;
+  padding: 12px 0;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.challenge-attribution-body p {
+  margin: 0 0 8px;
+}
+
+.challenge-connection-section {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.challenge-section-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin: 0 0 10px;
+}
+
+.challenge-connection-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.challenge-connection-link {
+  color: var(--accent-gold-soft);
+  text-decoration: none;
+}
+
+.challenge-connection-link:hover {
+  text-decoration: underline;
+}
+
+.challenge-connection-code {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.9);
+  font-size: 0.9rem;
+  color: #e2e8f0;
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+
+.challenge-connection-copy {
+  font-size: 0.85rem;
+  padding: 6px 12px;
+}
+
+.challenge-max-attempts {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin: 0 0 16px;
+}
+
 .challenge-description-card {
   padding: 20px;
   border-radius: 16px;
@@ -3307,6 +3450,40 @@ button.challenge-card {
   font-size: 0.95rem;
   line-height: 1.6;
   color: #e2e8f0;
+}
+
+.challenge-description-body p {
+  margin: 0 0 12px;
+}
+
+.challenge-description-body p:last-child {
+  margin-bottom: 0;
+}
+
+.challenge-description-body ul,
+.challenge-description-body ol {
+  margin: 0 0 12px;
+  padding-left: 1.5em;
+}
+
+.challenge-description-body code {
+  background: rgba(30, 41, 59, 0.8);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.challenge-description-body pre {
+  overflow-x: auto;
+  padding: 12px;
+  background: rgba(30, 41, 59, 0.9);
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.challenge-description-body pre code {
+  background: none;
+  padding: 0;
 }
 
 .challenge-no-description {
@@ -4604,7 +4781,48 @@ button.challenge-card {
   margin-top: 24px;
 }
 
-/* User profile (public) page */
+/* User profile (public + own profile) page */
+.user-profile-header-centered {
+  text-align: center;
+}
+
+.user-profile-header-centered .user-profile-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin: 0 0 8px;
+  letter-spacing: 0.02em;
+}
+
+.user-profile-team-tag {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+
+.user-profile-team-tag:hover {
+  background: rgba(148, 163, 184, 0.3);
+  color: #fff;
+}
+
+.user-profile-stat {
+  margin: 4px 0;
+  font-size: 1.1rem;
+  color: var(--accent-gold-soft);
+  font-weight: 600;
+}
+
+.user-profile-breadcrumb {
+  margin-bottom: 16px;
+  justify-content: center;
+}
+
 .user-profile-header .user-profile-subtitle {
   margin-top: 4px;
   color: #94a3b8;
@@ -4852,11 +5070,16 @@ button.challenge-card {
   flex-wrap: wrap;
 }
 
-/* Full-width wrapper: هيدر + محتوى على عرض الصفحة كلها (Teams, Users, Scoreboard) */
+/* Full-width wrapper: هيدر + محتوى على عرض الصفحة كلها (Teams, Users, Scoreboard, Profile pages) */
 .teams-list-page,
 .users-page,
 .scoreboard-page,
-.challenges-page {
+.challenges-page,
+.team-page,
+.team-detail-page,
+.profile-page,
+.user-profile-page,
+.challenge-detail-page {
   max-width: none;
   width: 100%;
 }

@@ -43,7 +43,7 @@ export function TeamDetailPage() {
     const rawId = id ? parseInt(id, 10) : NaN
     if (!id || Number.isNaN(rawId)) return
     let cancelled = false
-    getUsers(1, 100, { team_id: rawId })
+    getUsers(1, 100, { team_id: rawId, viewAdmin: true })
       .then((res) => {
         if (!cancelled) setMembers(res.data ?? [])
       })
@@ -111,6 +111,7 @@ export function TeamDetailPage() {
 
   return (
     <div className="page team-detail-page">
+      <div className="page-full-width teams-list-full-width">
       <header className="page-header team-detail-header">
         <div>
           <nav className="breadcrumb">
@@ -213,6 +214,7 @@ export function TeamDetailPage() {
 
       <div className="team-detail-actions">
         <Link to="/teams" className="btn ghost">Back to teams</Link>
+      </div>
       </div>
     </div>
   )

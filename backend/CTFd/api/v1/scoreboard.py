@@ -13,6 +13,7 @@ from CTFd.utils.decorators.visibility import (
     check_score_visibility,
 )
 from CTFd.utils.modes import TEAMS_MODE, generate_account_url, get_mode_as_word
+from CTFd.utils.user import is_admin
 from CTFd.utils.scoreboard import get_scoreboard_detail
 from CTFd.utils.scores import get_standings, get_user_standings
 
@@ -21,13 +22,22 @@ scoreboard_namespace = Namespace(
 )
 
 
+def _scoreboard_cache_key():
+    """Different cache keys for admin vs public - must include is_admin() since both can send view=admin."""
+    base = make_cache_key()
+    view = request.args.get("view", "")
+    admin = is_admin()
+    return f"{base}::view={view}::admin={admin}"
+
+
 @scoreboard_namespace.route("")
 class ScoreboardList(Resource):
     @check_account_visibility
     @check_score_visibility
-    @cache.cached(timeout=60, key_prefix=make_cache_key)
+    @cache.cached(timeout=60, key_prefix=_scoreboard_cache_key)
     def get(self):
-        standings = get_standings()
+        admin_view = is_admin() and request.args.get("view") == "admin"
+        standings = get_standings(admin=admin_view)
         response = []
         mode = get_config("user_mode")
         account_type = get_mode_as_word()
@@ -52,7 +62,7 @@ class ScoreboardList(Resource):
             users = r.fetchall()
             membership = defaultdict(dict)
             for u in users:
-                if u.hidden is False and u.banned is False:
+                if admin_view or (u.hidden is False and u.banned is False):
                     membership[u.team_id][u.id] = {
                         "id": u.id,
                         "oauth_id": u.oauth_id,
@@ -63,7 +73,7 @@ class ScoreboardList(Resource):
                     }
 
             # Get user_standings as a dict so that we can more quickly get member scores
-            user_standings = get_user_standings()
+            user_standings = get_user_standings(admin=admin_view)
             for u in user_standings:
                 membership[u.team_id][u.user_id]["score"] = int(u.score)
 
