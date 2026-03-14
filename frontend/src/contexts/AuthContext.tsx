@@ -34,7 +34,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await getMe()
       const raw = data as Record<string, unknown>
       const typeVal = raw.type != null ? String(raw.type).toLowerCase() : ''
-      const isAdmin = raw.is_admin === true || typeVal === 'admin'
+      const adminIds = (import.meta.env.VITE_ADMIN_USER_IDS ?? '')
+        .toString()
+        .split(',')
+        .map((s: string) => parseInt(s.trim(), 10))
+        .filter((n: number) => !Number.isNaN(n))
+      const userId = typeof raw.id === 'number' ? raw.id : parseInt(String(raw.id ?? ''), 10)
+      const isInAdminIds = !Number.isNaN(userId) && adminIds.includes(userId)
+      const isAdmin =
+        raw.is_admin === true || typeVal === 'admin' || isInAdminIds
       const normalized: MeUser = {
         ...raw,
         id: raw.id as number,

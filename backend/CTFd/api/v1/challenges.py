@@ -429,6 +429,12 @@ class Challenge(Resource):
 
         response = chal_class.read(challenge=chal)
 
+        # Add HTML-rendered description and attribution for SPA
+        from CTFd.utils.config.pages import build_markdown
+
+        response["description_html"] = str(build_markdown(chal.description)) if chal.description else None
+        response["attribution_html"] = str(build_markdown(chal.attribution)) if chal.attribution else None
+
         # Get list of solve_ids for current user
         if authed():
             user = get_current_user()

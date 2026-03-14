@@ -131,6 +131,12 @@ class UserList(Resource):
         if response.errors:
             return {"success": False, "errors": response.errors}, 400
 
+        data = response.data
+        for i, user_obj in enumerate(users.items):
+            if i < len(data):
+                data[i]["score"] = int(user_obj.score or 0)
+                data[i]["place"] = user_obj.place
+
         return {
             "meta": {
                 "pagination": {
@@ -143,7 +149,7 @@ class UserList(Resource):
                 }
             },
             "success": True,
-            "data": response.data,
+            "data": data,
         }
 
     @admins_only

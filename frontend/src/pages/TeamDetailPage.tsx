@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getTeamById, type TeamPublic } from '../api/teams'
+import { getTeamById, getTeamSolves, type TeamPublic, type TeamSolve } from '../api/teams'
 import { getUsers, type UserPublic } from '../api/users'
 import { PageSkeleton } from '../components/PageSkeleton'
 
@@ -11,6 +11,8 @@ export function TeamDetailPage() {
   const { user, loading: authLoading } = useAuth()
   const [team, setTeam] = useState<TeamPublic | null | undefined>(undefined)
   const [members, setMembers] = useState<UserPublic[]>([])
+  const [solves, setSolves] = useState<TeamSolve[]>([])
+  const [solvesLoading, setSolvesLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export function TeamDetailPage() {
     const rawId = id ? parseInt(id, 10) : NaN
     if (!id || Number.isNaN(rawId)) return
     let cancelled = false
-    getUsers(1, 100, { team_id: rawId })
+    getUsers(1, 100, { team_id: rawId, viewAdmin: true })
       .then((res) => {
         if (!cancelled) setMembers(res.data ?? [])
       })
@@ -50,6 +52,27 @@ export function TeamDetailPage() {
       })
     return () => { cancelled = true }
   }, [id])
+
+  useEffect(() => {
+    const rawId = id ? parseInt(id, 10) : NaN
+    if (!id || Number.isNaN(rawId) || team == null) {
+      setSolvesLoading(false)
+      return
+    }
+    let cancelled = false
+    setSolvesLoading(true)
+    getTeamSolves(rawId)
+      .then((data) => {
+        if (!cancelled) setSolves(data ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setSolves([])
+      })
+      .finally(() => {
+        if (!cancelled) setSolvesLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [id, team])
 
   if (!authLoading && !user) {
     return (
@@ -88,6 +111,7 @@ export function TeamDetailPage() {
 
   return (
     <div className="page team-detail-page">
+      <div className="page-full-width teams-list-full-width">
       <header className="page-header team-detail-header">
         <div>
           <nav className="breadcrumb">
@@ -114,28 +138,83 @@ export function TeamDetailPage() {
         )}
       </section>
 
-      <section className="team-detail-members team-members-card">
-        <h2>Members</h2>
+      <section className="team-detail-section team-detail-members">
+        <h2 className="team-detail-section-title">Members</h2>
         {members.length > 0 ? (
-          <ul className="team-members-list">
-            {members.map((m) => (
-              <li key={m.id} className="team-member-item">
-                <Link to={`/users/${m.id}`} className="data-table-link">
-                  {m.name}
-                </Link>
-                {team.captain_id === m.id && (
-                  <span className="team-member-badge">Captain</span>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="team-detail-table-wrap">
+            <table className="team-detail-table">
+              <thead>
+                <tr>
+                  <th>User Name</th>
+                  <th className="team-detail-table-th-right">Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((m) => (
+                  <tr key={m.id}>
+                    <td>
+                      <span className="team-detail-member-name">
+                        <Link to={`/users/${m.id}`} className="team-detail-table-link">
+                          {m.name}
+                        </Link>
+                        {team.captain_id === m.id && (
+                          <span className="team-detail-captain-badge">Captain</span>
+                        )}
+                      </span>
+                    </td>
+                    <td className="team-detail-table-td-right">{m.score ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <p className="team-members-empty">No members listed.</p>
+          <p className="team-detail-empty">No members listed.</p>
+        )}
+      </section>
+
+      <section className="team-detail-section team-detail-solves">
+        <h2 className="team-detail-section-title">Solves</h2>
+        {solvesLoading ? (
+          <div className="team-detail-skeleton">
+            <div className="skeleton-block" />
+            <div className="skeleton-block" />
+          </div>
+        ) : solves.length > 0 ? (
+          <div className="team-detail-table-wrap">
+            <table className="team-detail-table">
+              <thead>
+                <tr>
+                  <th>Challenge</th>
+                  <th>Category</th>
+                  <th>Value</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {solves.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      <Link to={s.challenge_id ? `/challenges/${s.challenge_id}` : '#'} className="team-detail-table-link">
+                        {s.challenge?.name ?? `Challenge #${s.challenge_id ?? s.id}`}
+                      </Link>
+                    </td>
+                    <td>{s.challenge?.category ?? '—'}</td>
+                    <td>{s.value ?? '—'}</td>
+                    <td>{s.date ? new Date(s.date).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' }) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="team-detail-empty">No solves yet.</p>
         )}
       </section>
 
       <div className="team-detail-actions">
         <Link to="/teams" className="btn ghost">Back to teams</Link>
+      </div>
       </div>
     </div>
   )

@@ -41,7 +41,7 @@ export function Navbar() {
       <NavLink to="/scoreboard" onClick={closeMobile}>Scoreboard</NavLink>
       {user && (
         <>
-          <NavLink to="/team" onClick={closeMobile}>Team</NavLink>
+          <NavLink to="/teams" onClick={closeMobile}>Team</NavLink>
           <NavLink to="/users" onClick={closeMobile}>Users</NavLink>
         </>
       )}

@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getScoreboard } from '../api/scoreboard'
+import { getCtfTime } from '../api/ctf'
 import { TableSkeleton } from '../components/TableSkeleton'
+import crescentMoonImg from '../assets/crescent-moon.png'
+import lanternImg from '../assets/lantern.png'
 
 interface ScoreRow {
   position: number
@@ -13,7 +16,6 @@ interface ScoreRow {
   lastSubmission?: string
 }
 
-type ScoreView = 'top10' | 'all'
 const SCOREBOARD_PER_PAGE = 50
 
 function formatLastSubmission(isoOrNull: unknown): string | undefined {
@@ -42,10 +44,21 @@ function parseScoreboardData(data: unknown): ScoreRow[] {
 export function ScoreboardPage() {
   const { user, loading: authLoading } = useAuth()
   const [rows, setRows] = useState<ScoreRow[]>([])
-  const [view, setView] = useState<ScoreView>('top10')
   const [scoreboardPage, setScoreboardPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [ctfEnded, setCtfEnded] = useState(false)
+
+  useEffect(() => {
+    getCtfTime()
+      .then(({ end }) => {
+        if (end) {
+          const endTime = new Date(end).getTime()
+          setCtfEnded(Date.now() >= endTime)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const fetchScoreboard = useCallback(async () => {
     setError(null)
@@ -65,17 +78,10 @@ export function ScoreboardPage() {
     fetchScoreboard()
   }, [fetchScoreboard])
 
-  useEffect(() => {
-    const onFocus = () => { fetchScoreboard() }
-    window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
-  }, [fetchScoreboard])
-
   const visibleRows = useMemo(() => {
-    if (view === 'top10') return rows.slice(0, 10)
     const start = (scoreboardPage - 1) * SCOREBOARD_PER_PAGE
     return rows.slice(start, start + SCOREBOARD_PER_PAGE)
-  }, [rows, view, scoreboardPage])
+  }, [rows, scoreboardPage])
 
   const scoreboardTotalPages = Math.max(1, Math.ceil(rows.length / SCOREBOARD_PER_PAGE))
 
@@ -92,30 +98,26 @@ export function ScoreboardPage() {
 
   return (
     <div className="page scoreboard-page">
-      <header className="page-header scoreboard-header scoreboard-header-with-refresh">
-        <div>
-          <h1>Scoreboard</h1>
-          <p>Track how teams climb under the crescent in real time.</p>
-        </div>
-        <div className="scoreboard-header-actions">
-          <button
-            type="button"
-            className="btn ghost scoreboard-refresh-btn"
-            onClick={fetchScoreboard}
-            disabled={loading}
-            aria-label="Refresh scoreboard"
-          >
-            {loading ? 'Loading…' : 'Refresh'}
-          </button>
-          <div className="scoreboard-legend">
-            <span className="score-pill gold">1st</span>
-            <span className="score-pill silver">2nd</span>
-            <span className="score-pill bronze">3rd</span>
+      <div className="page-full-width">
+        <header className="page-header scoreboard-header scoreboard-header-with-refresh">
+          <div>
+            <h1>Scoreboard</h1>
+            <p>Track how teams climb under the crescent in real time.</p>
           </div>
-        </div>
-      </header>
+          <div className="scoreboard-header-actions">
+            <button
+              type="button"
+              className="btn ghost scoreboard-refresh-btn"
+              onClick={fetchScoreboard}
+              disabled={loading}
+              aria-label="Refresh scoreboard"
+            >
+              {loading ? 'Loading…' : 'Refresh'}
+            </button>
+          </div>
+        </header>
 
-      {error && (
+        {error && (
         <div className="scoreboard-error">
           <p>{error}</p>
           <button type="button" className="btn primary" onClick={fetchScoreboard}>
@@ -130,94 +132,177 @@ export function ScoreboardPage() {
 
       {!loading && !error && (
         <>
-          <div className="scoreboard-controls">
-            <button
-              type="button"
-              className={`score-toggle ${view === 'top10' ? 'active' : ''}`}
-              onClick={() => { setView('top10'); setScoreboardPage(1) }}
-            >
-              Top 10
-            </button>
-            <button
-              type="button"
-              className={`score-toggle ${view === 'all' ? 'active' : ''}`}
-              onClick={() => { setView('all'); setScoreboardPage(1) }}
-            >
-              All teams ({rows.length})
-            </button>
-          </div>
-
-          <div className="scoreboard-shell">
-            <table className="scoreboard-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Team</th>
-                  <th>Score</th>
-                  <th>Solves</th>
-                  <th>Last submission</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleRows.map((row, idx) => {
-                  let rankClass = ''
-                  if (row.position === 1) rankClass = 'score-top-1'
-                  else if (row.position === 2) rankClass = 'score-top-2'
-                  else if (row.position === 3) rankClass = 'score-top-3'
-
-                  return (
-                    <tr key={`score-${idx}-${row.position}-${row.name ?? ''}`} className={rankClass}>
-                      <td>{row.position}</td>
-                      <td>
-                        {row.accountId != null ? (
-                          <Link to={`/teams/${row.accountId}`} className="scoreboard-team-link">
-                            {row.name}
-                          </Link>
-                        ) : (
-                          row.name
-                        )}
-                      </td>
-                      <td>{row.score}</td>
-                      <td>{row.solves ?? '—'}</td>
-                      <td>{row.lastSubmission ?? '—'}</td>
-                    </tr>
-                  )
-                })}
-                {visibleRows.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="scoreboard-empty">
-                      No teams on the board yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          {view === 'all' && rows.length > SCOREBOARD_PER_PAGE && (
-            <nav className="pagination scoreboard-pagination" aria-label="Scoreboard pagination">
-              <button
-                type="button"
-                className="btn ghost pagination-btn"
-                disabled={scoreboardPage <= 1}
-                onClick={() => setScoreboardPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </button>
-              <span className="pagination-info">
-                Page {scoreboardPage} of {scoreboardTotalPages} ({rows.length} teams)
-              </span>
-              <button
-                type="button"
-                className="btn ghost pagination-btn"
-                disabled={scoreboardPage >= scoreboardTotalPages}
-                onClick={() => setScoreboardPage((p) => Math.min(scoreboardTotalPages, p + 1))}
-              >
-                Next
-              </button>
-            </nav>
+          {rows.length >= 1 && (
+            <div className="scoreboard-podium">
+              {rows[1] && (
+                <div className="scoreboard-podium-card scoreboard-podium-card--2nd">
+                  <span className="scoreboard-podium-card-specks" aria-hidden />
+                  <img src={crescentMoonImg} alt="" className="scoreboard-podium-crescent" aria-hidden />
+                  <div className="scoreboard-podium-card-head">
+                    <span className="scoreboard-podium-rank">2ND</span>
+                    <span className="scoreboard-podium-points">{Number(rows[1].score).toLocaleString('en-US')} <span className="scoreboard-podium-pts-unit">PTS</span></span>
+                  </div>
+                  <div className="scoreboard-podium-card-body">
+                    <div className="scoreboard-podium-lantern-wrap">
+                      <img src={lanternImg} alt="" className="scoreboard-podium-lantern" aria-hidden />
+                    </div>
+                    {rows[1].accountId != null ? (
+                      <Link to={`/teams/${rows[1].accountId}`} className="scoreboard-podium-name">
+                        {rows[1].name}
+                      </Link>
+                    ) : (
+                      <span className="scoreboard-podium-name">{rows[1].name}</span>
+                    )}
+                    <span className="scoreboard-podium-solves"><span className="scoreboard-podium-solves-diamond" aria-hidden>◆</span> {rows[1].solves ?? 0} solves</span>
+                  </div>
+                  <div className="scoreboard-podium-card-divider" aria-hidden />
+                  <div className="scoreboard-podium-card-footer">
+                    <span className="scoreboard-podium-card-number" aria-hidden>2</span>
+                  </div>
+                </div>
+              )}
+              {rows[0] && (
+                <div className="scoreboard-podium-card scoreboard-podium-card--1st">
+                  <span className="scoreboard-podium-card-specks" aria-hidden />
+                  <img src={crescentMoonImg} alt="" className="scoreboard-podium-crescent" aria-hidden />
+                  <div className="scoreboard-podium-card-head">
+                    <span className="scoreboard-podium-rank">1ST</span>
+                    <span className="scoreboard-podium-points">{Number(rows[0].score).toLocaleString('en-US')} <span className="scoreboard-podium-pts-unit">PTS</span></span>
+                  </div>
+                  <div className="scoreboard-podium-card-body">
+                    <div className="scoreboard-podium-lantern-wrap">
+                      <img src={lanternImg} alt="" className="scoreboard-podium-lantern" aria-hidden />
+                    </div>
+                    {rows[0].accountId != null ? (
+                      <Link to={`/teams/${rows[0].accountId}`} className="scoreboard-podium-name">
+                        {rows[0].name}
+                      </Link>
+                    ) : (
+                      <span className="scoreboard-podium-name">{rows[0].name}</span>
+                    )}
+                    <span className="scoreboard-podium-solves"><span className="scoreboard-podium-solves-diamond" aria-hidden>◆</span> {rows[0].solves ?? 0} solves</span>
+                  </div>
+                  <div className="scoreboard-podium-card-divider" aria-hidden />
+                  <div className="scoreboard-podium-card-footer">
+                    <span className="scoreboard-podium-card-number" aria-hidden>1</span>
+                  </div>
+                </div>
+              )}
+              {rows[2] && (
+                <div className="scoreboard-podium-card scoreboard-podium-card--3rd">
+                  <span className="scoreboard-podium-card-specks" aria-hidden />
+                  <img src={crescentMoonImg} alt="" className="scoreboard-podium-crescent" aria-hidden />
+                  <div className="scoreboard-podium-card-head">
+                    <span className="scoreboard-podium-rank">3RD</span>
+                    <span className="scoreboard-podium-points">{Number(rows[2].score).toLocaleString('en-US')} <span className="scoreboard-podium-pts-unit">PTS</span></span>
+                  </div>
+                  <div className="scoreboard-podium-card-body">
+                    <div className="scoreboard-podium-lantern-wrap">
+                      <img src={lanternImg} alt="" className="scoreboard-podium-lantern" aria-hidden />
+                    </div>
+                    {rows[2].accountId != null ? (
+                      <Link to={`/teams/${rows[2].accountId}`} className="scoreboard-podium-name">
+                        {rows[2].name}
+                      </Link>
+                    ) : (
+                      <span className="scoreboard-podium-name">{rows[2].name}</span>
+                    )}
+                    <span className="scoreboard-podium-solves"><span className="scoreboard-podium-solves-diamond" aria-hidden>◆</span> {rows[2].solves ?? 0} solves</span>
+                  </div>
+                  <div className="scoreboard-podium-card-divider" aria-hidden />
+                  <div className="scoreboard-podium-card-footer">
+                    <span className="scoreboard-podium-card-number" aria-hidden>3</span>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
+
+          <section className="scoreboard-full-rankings">
+            <header className="scoreboard-full-rankings-header">
+              <div className="scoreboard-full-rankings-title-wrap">
+                <span className="scoreboard-full-rankings-icon" aria-hidden>
+                  <span /><span /><span />
+                </span>
+                <h2 className="scoreboard-full-rankings-title">FULL RANKINGS</h2>
+              </div>
+              {ctfEnded && (
+                <span className="scoreboard-ended-badge">
+                  <span className="scoreboard-ended-dot" aria-hidden />
+                  ENDED
+                </span>
+              )}
+            </header>
+            <div className="scoreboard-rank-list">
+              {visibleRows.length > 0 && (
+                <div className="scoreboard-rank-header">
+                  <span className="scoreboard-rank-header-col scoreboard-rank-header-num">#</span>
+                  <span className="scoreboard-rank-header-col scoreboard-rank-header-team">TEAM</span>
+                  <span className="scoreboard-rank-header-col scoreboard-rank-header-score">SCORE</span>
+                </div>
+              )}
+              {visibleRows.map((row, idx) => {
+                const maxScore = rows[0]?.score && rows[0].score > 0 ? rows[0].score : 1
+                const progressPct = Math.min(100, (row.score / maxScore) * 100)
+                return (
+                  <div
+                    key={`rank-${idx}-${row.position}-${row.name ?? ''}`}
+                    className="scoreboard-rank-row"
+                  >
+                    <div className="scoreboard-rank-circle">{row.position}</div>
+                    <div className="scoreboard-rank-info">
+                      {row.accountId != null ? (
+                        <Link to={`/teams/${row.accountId}`} className="scoreboard-rank-team">
+                          {row.name}
+                        </Link>
+                      ) : (
+                        <span className="scoreboard-rank-team">{row.name}</span>
+                      )}
+                      <span className="scoreboard-rank-solves">{row.solves ?? 0} solves</span>
+                      <div className="scoreboard-rank-progress-wrap">
+                        <div className="scoreboard-rank-progress-bar">
+                          <div className="scoreboard-rank-progress-fill" style={{ width: `${progressPct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="scoreboard-rank-score-wrap">
+                      <span className="scoreboard-rank-score">{Number(row.score).toLocaleString('en-US')}</span>
+                      <span className="scoreboard-rank-pts-label">PTS</span>
+                    </div>
+                  </div>
+                )
+              })}
+              {visibleRows.length === 0 && (
+                <p className="scoreboard-empty">No teams on the board yet.</p>
+              )}
+            </div>
+            {rows.length > SCOREBOARD_PER_PAGE && (
+              <nav className="pagination scoreboard-pagination" aria-label="Scoreboard pagination">
+                <button
+                  type="button"
+                  className="btn ghost pagination-btn"
+                  disabled={scoreboardPage <= 1}
+                  onClick={() => setScoreboardPage((p) => Math.max(1, p - 1))}
+                >
+                  Previous
+                </button>
+                <span className="pagination-info">
+                  Page {scoreboardPage} of {scoreboardTotalPages} ({rows.length} teams)
+                </span>
+                <button
+                  type="button"
+                  className="btn ghost pagination-btn"
+                  disabled={scoreboardPage >= scoreboardTotalPages}
+                  onClick={() => setScoreboardPage((p) => Math.min(scoreboardTotalPages, p + 1))}
+                >
+                  Next
+                </button>
+              </nav>
+            )}
+          </section>
         </>
       )}
+      </div>
     </div>
   )
 }

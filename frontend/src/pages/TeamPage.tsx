@@ -2,7 +2,7 @@ import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getMyTeam, createTeam, joinTeam } from '../api/teams'
+import { getMyTeam, createTeam, joinTeam, getTeamSolves, type TeamSolve } from '../api/teams'
 import { getUsers, type UserPublic } from '../api/users'
 
 interface TeamMember {
@@ -26,6 +26,8 @@ export function TeamPage() {
   const [team, setTeam] = useState<TeamInfo | null | undefined>(undefined)
   const [members, setMembers] = useState<UserPublic[]>([])
   const [membersLoading, setMembersLoading] = useState(false)
+  const [solves, setSolves] = useState<TeamSolve[]>([])
+  const [solvesLoading, setSolvesLoading] = useState(false)
   const [tab, setTab] = useState<TabMode>('create')
 
   const [createName, setCreateName] = useState('')
@@ -69,7 +71,7 @@ export function TeamPage() {
     }
     let cancelled = false
     setMembersLoading(true)
-    getUsers(1, 100, { team_id: team.id })
+    getUsers(1, 100, { team_id: team.id, viewAdmin: true })
       .then((res) => {
         if (!cancelled) setMembers(res.data ?? [])
       })
@@ -82,15 +84,34 @@ export function TeamPage() {
     return () => { cancelled = true }
   }, [team?.id])
 
+  useEffect(() => {
+    if (!team?.id) {
+      setSolves([])
+      setSolvesLoading(false)
+      return
+    }
+    let cancelled = false
+    setSolvesLoading(true)
+    getTeamSolves(team.id)
+      .then((data) => {
+        if (!cancelled) setSolves(data ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setSolves([])
+      })
+      .finally(() => {
+        if (!cancelled) setSolvesLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [team?.id])
+
   async function handleCreateSubmit(e: FormEvent) {
     e.preventDefault()
     setCreateLoading(true)
     setCreateError(null)
     try {
       await createTeam(createName.trim(), createPassword)
-      await loadTeam()
-      setCreateName('')
-      setCreatePassword('')
+      window.location.replace('/team')
     } catch (err: unknown) {
       setCreateError(err instanceof Error ? err.message : 'Failed to create team')
     } finally {
@@ -104,9 +125,7 @@ export function TeamPage() {
     setJoinError(null)
     try {
       await joinTeam(joinName.trim(), joinPassword)
-      await loadTeam()
-      setJoinName('')
-      setJoinPassword('')
+      window.location.replace('/team')
     } catch (err: unknown) {
       setJoinError(err instanceof Error ? err.message : 'Failed to join team')
     } finally {
@@ -140,63 +159,113 @@ export function TeamPage() {
 
     return (
       <div className="page team-page">
-        <header className="page-header team-page-header">
-          <h1>{team.name}</h1>
-          <p className="team-page-subtitle">Team #{team.id} · Your team overview</p>
-        </header>
+        <div className="page-full-width teams-list-full-width">
+          <header className="page-header team-detail-header team-page-header">
+            <div>
+              <h1>{team.name}</h1>
+              <p className="team-page-subtitle">Team #{team.id} · Your team overview</p>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <Link to="/teams" className="btn ghost">View all teams</Link>
+              {isCaptain && (
+                <Link to="/team/settings" className="btn primary">Team settings</Link>
+              )}
+              <Link to="/challenges" className="btn ghost">Go to challenges</Link>
+            </div>
+          </header>
 
-        <section className="team-stats">
-          <div className="team-stat-card">
-            <span className="team-stat-label">Score</span>
-            <span className="team-stat-value">{team.score}</span>
-          </div>
-          {team.place != null && (
+          <section className="team-detail-stats">
             <div className="team-stat-card">
-              <span className="team-stat-label">Rank</span>
-              <span className="team-stat-value">#{team.place}</span>
+              <span className="team-stat-label">Score</span>
+              <span className="team-stat-value">{team.score}</span>
             </div>
-          )}
-        </section>
+            {team.place != null && (
+              <div className="team-stat-card">
+                <span className="team-stat-label">Rank</span>
+                <span className="team-stat-value">#{team.place}</span>
+              </div>
+            )}
+          </section>
 
-        <section className="team-members team-members-card" aria-label="Team members">
-          <h2 className="team-members-title">Members</h2>
-          {membersLoading ? (
-            <div className="team-members-skeleton" aria-busy="true">
-              <div className="team-members-skeleton-line" />
-              <div className="team-members-skeleton-line" />
-              <div className="team-members-skeleton-line" />
-            </div>
-          ) : members.length > 0 ? (
-            <ul className="team-members-list">
-              {members.map((m) => (
-                <li key={m.id} className="team-member-item">
-                  <Link to={`/users/${m.id}`} className="data-table-link">
-                    {m.name}
-                  </Link>
-                  {team.captain_id === m.id && (
-                    <span className="team-member-badge">Captain</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="team-members-empty">No members listed.</p>
-          )}
-        </section>
+          <section className="team-detail-section team-detail-members" aria-label="Team members">
+            <h2 className="team-detail-section-title">Members</h2>
+            {membersLoading ? (
+              <div className="team-detail-skeleton">
+                <div className="skeleton-block" />
+                <div className="skeleton-block" />
+              </div>
+            ) : members.length > 0 ? (
+              <div className="team-detail-table-wrap">
+                <table className="team-detail-table">
+                  <thead>
+                    <tr>
+                      <th>User Name</th>
+                      <th className="team-detail-table-th-right">Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {members.map((m) => (
+                      <tr key={m.id}>
+                        <td>
+                          <span className="team-detail-member-name">
+                            <Link to={`/users/${m.id}`} className="team-detail-table-link">
+                              {m.name}
+                            </Link>
+                            {team.captain_id === m.id && (
+                              <span className="team-detail-captain-badge">Captain</span>
+                            )}
+                          </span>
+                        </td>
+                        <td className="team-detail-table-td-right">{m.score ?? 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="team-detail-empty">No members listed.</p>
+            )}
+          </section>
 
-        <section className="team-actions">
-          <Link to="/teams" className="btn ghost">
-            View all teams
-          </Link>
-          {isCaptain && (
-            <Link to="/team/settings" className="btn primary">
-              Team settings
-            </Link>
-          )}
-          <Link to="/challenges" className="btn ghost">
-            Go to challenges
-          </Link>
-        </section>
+          <section className="team-detail-section team-detail-solves">
+            <h2 className="team-detail-section-title">Solves</h2>
+            {solvesLoading ? (
+              <div className="team-detail-skeleton">
+                <div className="skeleton-block" />
+                <div className="skeleton-block" />
+              </div>
+            ) : solves.length > 0 ? (
+              <div className="team-detail-table-wrap">
+                <table className="team-detail-table">
+                  <thead>
+                    <tr>
+                      <th>Challenge</th>
+                      <th>Category</th>
+                      <th>Value</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {solves.map((s) => (
+                      <tr key={s.id}>
+                        <td>
+                          <Link to={s.challenge_id ? `/challenges/${s.challenge_id}` : '#'} className="team-detail-table-link">
+                            {s.challenge?.name ?? `Challenge #${s.challenge_id ?? s.id}`}
+                          </Link>
+                        </td>
+                        <td>{s.challenge?.category ?? '—'}</td>
+                        <td>{s.challenge?.value ?? s.value ?? '—'}</td>
+                        <td>{s.date ? new Date(s.date).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' }) : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="team-detail-empty">No solves yet.</p>
+            )}
+          </section>
+        </div>
       </div>
     )
   }

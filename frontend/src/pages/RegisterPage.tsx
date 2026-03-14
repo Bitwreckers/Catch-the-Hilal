@@ -1,12 +1,10 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
 import { register } from '../api/auth'
 
+const REDIRECT_AFTER_REGISTER = '/challenges'
+
 export function RegisterPage() {
-  const navigate = useNavigate()
-  const { refresh } = useAuth()
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,8 +21,7 @@ export function RegisterPage() {
         email,
         password,
       })
-      await refresh()
-      navigate('/challenges')
+      window.location.replace(REDIRECT_AFTER_REGISTER)
     } catch (err: any) {
       setError(err?.message ?? 'Failed to register')
     } finally {

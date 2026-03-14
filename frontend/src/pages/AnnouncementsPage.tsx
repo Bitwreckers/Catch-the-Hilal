@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getAnnouncements } from '../api/announcements'
@@ -39,8 +39,6 @@ function extractHintTarget(a: { title?: string; body?: string }): string | null 
 export function AnnouncementsPage() {
   const { user, loading } = useAuth()
   const [items, setItems] = useState<Announcement[]>([])
-  const [filter, setFilter] = useState<AnnouncementType | 'all'>('all')
-
   useEffect(() => {
     ;(async () => {
       try {
@@ -69,11 +67,6 @@ export function AnnouncementsPage() {
     })()
   }, [])
 
-  const visibleItems = useMemo(
-    () => (filter === 'all' ? items : items.filter((a) => a.type === filter)),
-    [items, filter],
-  )
-
   if (!loading && !user) {
     return (
       <div className="page announcements-page">
@@ -95,55 +88,10 @@ export function AnnouncementsPage() {
         <div className="announcements-status-pill">Live updates</div>
       </header>
 
-      <div className="announcements-filters">
-        <button
-          type="button"
-          className={`ann-filter ${filter === 'all' ? 'active' : ''}`}
-          onClick={() => setFilter('all')}
-        >
-          All
-        </button>
-        <button
-          type="button"
-          className={`ann-filter ${filter === 'hint' ? 'active' : ''}`}
-          onClick={() => setFilter('hint')}
-        >
-          Hints
-        </button>
-        <button
-          type="button"
-          className={`ann-filter ${filter === 'info' ? 'active' : ''}`}
-          onClick={() => setFilter('info')}
-        >
-          Info
-        </button>
-        <button
-          type="button"
-          className={`ann-filter ${filter === 'schedule' ? 'active' : ''}`}
-          onClick={() => setFilter('schedule')}
-        >
-          Schedule
-        </button>
-        <button
-          type="button"
-          className={`ann-filter ${filter === 'critical' ? 'active' : ''}`}
-          onClick={() => setFilter('critical')}
-        >
-          Critical
-        </button>
-        <button
-          type="button"
-          className={`ann-filter ${filter === 'writeups' ? 'active' : ''}`}
-          onClick={() => setFilter('writeups')}
-        >
-          Writeups
-        </button>
-      </div>
-
       <section className="announcements-timeline">
         <div className="announcements-line" aria-hidden="true" />
         <div className="announcements-list">
-          {visibleItems.map((a) => (
+          {items.map((a) => (
             <article key={a.id} className={`announcement-card announcement-${a.type}`}>
               <div className="announcement-dot" aria-hidden="true" />
               <div className="announcement-content">
@@ -163,7 +111,7 @@ export function AnnouncementsPage() {
               </div>
             </article>
           ))}
-          {visibleItems.length === 0 && (
+          {items.length === 0 && (
             <p className="announcements-empty">No announcements yet.</p>
           )}
         </div>

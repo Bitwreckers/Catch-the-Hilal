@@ -29,7 +29,7 @@ export interface UserListResponse {
 export interface UserSolve {
   id: number
   challenge_id?: number
-  challenge?: { id: number; name: string }
+  challenge?: { id: number; name: string; category?: string; value?: number }
   user_id: number
   team_id?: number | null
   date?: string
@@ -49,6 +49,7 @@ export interface GetUsersFilters {
   country?: string
   affiliation?: string
   team_id?: number
+  viewAdmin?: boolean
 }
 
 /** GET /api/v1/users — paginated list. */
@@ -65,13 +66,28 @@ export async function getUsers(
   if (filters?.country) params.set('country', filters.country)
   if (filters?.affiliation) params.set('affiliation', filters.affiliation)
   if (filters?.team_id != null) params.set('team_id', String(filters.team_id))
+  if (filters?.viewAdmin) params.set('view', 'admin')
 
-  const res = await apiClient.get<{ success: boolean; data: UserPublic[]; meta: { pagination: PaginationMeta } }>(
-    `/api/v1/users?${params.toString()}`
-  )
+  const res = await apiClient.get<{
+    success?: boolean
+    data?: UserPublic[] | unknown
+    meta?: { pagination: PaginationMeta }
+  }>(`/api/v1/users?${params.toString()}`, {
+    validateStatus: (s) => s === 200 || s === 404,
+  })
+  if (res.status === 404) {
+    return {
+      data: [],
+      meta: { pagination: { page: 1, next: null, prev: null, pages: 1, per_page: perPage, total: 0 } },
+    }
+  }
+  const rawData = res.data?.data
+  const data = Array.isArray(rawData) ? rawData : []
   return {
-    data: res.data.data ?? [],
-    meta: res.data.meta ?? { pagination: { page: 1, next: null, prev: null, pages: 1, per_page: perPage, total: 0 } },
+    data,
+    meta: res.data?.meta ?? {
+      pagination: { page: 1, next: null, prev: null, pages: 1, per_page: perPage, total: 0 },
+    },
   }
 }
 
@@ -91,4 +107,31 @@ export async function getUserSolves(id: number): Promise<UserSolve[]> {
   })
   if (res.status === 404) return []
   return res.data.data ?? []
+}
+
+/** GET /api/v1/users/me/solves — current user's solves (requires auth). */
+export async function getMeSolves(): Promise<UserSolve[]> {
+  const res = await apiClient.get<{ success?: boolean; data?: UserSolve[] }>('/api/v1/users/me/solves', {
+    validateStatus: (s) => s === 200 || s === 401 || s === 403,
+  })
+  if (res.status !== 200) return []
+  return Array.isArray(res.data?.data) ? res.data.data : []
+}
+
+/** GET /api/v1/users/me/fails — current user's fail count. */
+export async function getMeFailsCount(): Promise<number> {
+  const res = await apiClient.get<{ success?: boolean; meta?: { count?: number } }>('/api/v1/users/me/fails', {
+    validateStatus: (s) => s === 200 || s === 401 || s === 403,
+  })
+  if (res.status !== 200) return 0
+  return res.data?.meta?.count ?? 0
+}
+
+/** GET /api/v1/users/:id/fails — returns meta.count for wrong submission count. */
+export async function getUserFailsCount(id: number): Promise<number> {
+  const res = await apiClient.get<{ success: boolean; meta?: { count?: number } }>(`/api/v1/users/${id}/fails`, {
+    validateStatus: (s) => s === 200 || s === 404,
+  })
+  if (res.status === 404) return 0
+  return res.data.meta?.count ?? 0
 }
