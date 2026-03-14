@@ -5,12 +5,14 @@ import { useAuth } from '../contexts/AuthContext'
 import { getChallenge, submitFlag, unlockHint, type ChallengeHint } from '../api/challenges'
 import { getBackendBaseUrl } from '../api/client'
 import { ChallengeDetailSkeleton } from '../components/ChallengeDetailSkeleton'
+import { WhaleInstanceControls } from '../components/WhaleInstanceControls'
 
 const SKELETON_MIN_MS = 400
 
 interface ChallengeDetails {
   id: number
   name: string
+  type?: string
   description: string
   description_html?: string
   category: string
@@ -51,6 +53,7 @@ export function ChallengeDetailPage() {
       setChallenge({
         id: data.id,
         name: data.name,
+        type: data.type,
         description: data.description ?? '',
         description_html: data.description_html,
         category: data.category ?? '',
@@ -212,7 +215,15 @@ export function ChallengeDetailPage() {
         </div>
       </section>
 
-      {connInfo && (
+      {challenge.type === 'dynamic_docker' && (
+        <WhaleInstanceControls
+          challengeId={challenge.id}
+          challengeType={challenge.type}
+          variant="page"
+        />
+      )}
+
+      {connInfo && challenge.type !== 'dynamic_docker' && (
         <section className="challenge-connection-section">
           <h3 className="challenge-section-label">Connection Info</h3>
           <div className="challenge-connection-body">
@@ -246,22 +257,28 @@ export function ChallengeDetailPage() {
           <h2 className="challenge-extras-title">Files</h2>
           <ul className="challenge-files-list">
             {files.map((url, i) => {
-              const backendBase = getBackendBaseUrl()
-              const fileUrl = backendBase && (url.startsWith('/') || !url.startsWith('http'))
-                ? backendBase + (url.startsWith('/') ? url : '/' + url)
-                : url
+              const base = getBackendBaseUrl()
+              const pathOnly = typeof url === 'string' ? url.split('?')[0] : ''
+              const needsBase = base && pathOnly.startsWith('/') && !url.startsWith('http')
+              const fileUrl = needsBase ? base + url : (typeof url === 'string' ? url : '')
               const label = files.length > 1 ? `File-${i + 1}` : 'File'
+              const isImage = /\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/i.test(pathOnly)
               return (
                 <li key={i}>
-                  <a
-                    href={fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download={label}
-                    className="challenge-file-link"
-                  >
-                    File {files.length > 1 ? i + 1 : ''}
-                  </a>
+                  {isImage ? (
+                    <div className="challenge-file-item">
+                      <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="challenge-file-link">
+                        <img src={fileUrl} alt={label} className="challenge-file-preview" loading="lazy" />
+                      </a>
+                      <a href={fileUrl} target="_blank" rel="noopener noreferrer" download={label} className="challenge-file-link challenge-file-download">
+                        {label} (Download)
+                      </a>
+                    </div>
+                  ) : (
+                    <a href={fileUrl} target="_blank" rel="noopener noreferrer" download={label} className="challenge-file-link">
+                      File {files.length > 1 ? i + 1 : ''}
+                    </a>
+                  )}
                 </li>
               )
             })}

@@ -20,6 +20,7 @@ export interface ChallengeHint {
 export interface ChallengeDetailResponse {
   id: number
   name: string
+  type?: string
   description?: string
   description_html?: string
   category?: string

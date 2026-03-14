@@ -8,6 +8,7 @@ import {
   type ChallengeSolve,
 } from '../api/challenges'
 import { getBackendBaseUrl } from '../api/client'
+import { WhaleInstanceControls } from './WhaleInstanceControls'
 
 export interface ChallengeModalInitialData {
   id: number
@@ -213,7 +214,15 @@ export function ChallengeModal({ challengeId, onClose, onSolved, initialData }: 
                 )}
               </div>
 
-              {!detailsLoading && connectionInfo && (
+              {!detailsLoading && challenge.type === 'dynamic_docker' && (
+                <WhaleInstanceControls
+                  challengeId={challengeId}
+                  challengeType={challenge.type}
+                  variant="modal"
+                />
+              )}
+
+              {!detailsLoading && connectionInfo && challenge.type !== 'dynamic_docker' && (
                 <section className="challenge-modal-section">
                   <h3 className="challenge-modal-section-title">Connection Info</h3>
                   <div className="challenge-modal-connection-wrap">
@@ -256,14 +265,20 @@ export function ChallengeModal({ challengeId, onClose, onSolved, initialData }: 
                   <p className="challenge-modal-files-label">{challenge.category || 'Files'}</p>
                   <div className="challenge-modal-files">
                     {files.map((url, i) => {
-                      const backendBase = getBackendBaseUrl()
-                      const fileUrl = backendBase && (url.startsWith('/') || !url.startsWith('http'))
-                        ? backendBase + (url.startsWith('/') ? url : '/' + url)
-                        : url
-                      const fileName = url.split('/').filter(Boolean).pop() || `File ${i + 1}`
+                      const base = getBackendBaseUrl()
+                      const pathOnly = typeof url === 'string' ? url.split('?')[0] : ''
+                      const needsBase = base && pathOnly.startsWith('/') && !url.startsWith('http')
+                      const fileUrl = needsBase ? base + url : (typeof url === 'string' ? url : '')
+                      const fileName = pathOnly.split('/').filter(Boolean).pop() || `File ${i + 1}`
+                      const isImage = /\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/i.test(pathOnly)
                       return (
+                        <div key={i} className="challenge-modal-file-wrap">
+                          {isImage && (
+                            <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="challenge-modal-file-preview-link">
+                              <img src={fileUrl} alt={fileName} className="challenge-modal-file-preview" loading="lazy" />
+                            </a>
+                          )}
                         <a
-                          key={i}
                           href={fileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -280,6 +295,7 @@ export function ChallengeModal({ challengeId, onClose, onSolved, initialData }: 
                           <span className="challenge-modal-download-filename">{fileName}</span>
                           <span className="challenge-modal-download-label">Download</span>
                         </a>
+                      </div>
                       )
                     })}
                   </div>

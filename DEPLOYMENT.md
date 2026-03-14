@@ -167,11 +167,55 @@ docker compose -f docker-compose.yml up -d --build
 
 ---
 
+## 2.1 (اختياري) CTFd-Whale — التحديات الديناميكية
+
+Whale يسمح بتشغيل كل تحدي داخل container معزول لكل لاعب/فريق، مع flags ديناميكية.
+
+### متطلبات Whale
+
+1. **Docker Swarm** (مطلوب):
+
+```bash
+docker swarm init
+docker node update --label-add 'name=linux-1' $(docker node ls -q)
+```
+
+2. **ملفات إعداد frp**: عدّل `backend/conf/frp/frps.ini` و `backend/conf/frp/frpc.ini`:
+   - `subdomain_host`: دومينك أو `127.0.0.1.nip.io` للتطوير المحلي
+   - `token`: نفس القيمة في كلا الملفين (مثل `your_whale_token`)
+
+3. **تهيئة الشبكة بعد أول تشغيل**:
+
+```bash
+docker compose exec ctfd python manage.py set_config whale:auto_connect_network backend_frp_containers
+```
+
+(اسم الشبكة قد يختلف حسب اسم المشروع؛ استخدم `docker network ls -f "label=com.docker.compose.project=backend" --format "{{.Name}}"` لعرض القائمة)
+
+4. **إعداد Whale من لوحة الأدمن**: `/admin/plugins/ctfd-whale/admin/settings`
+   - Auto Connect Network
+   - HTTP Domain Suffix (مطابق لـ subdomain_host في frps)
+   - Direct IP Address (عنوان الخادم للوصول المباشر)
+
+### تحذير أمني
+
+لا تسمح لأشخاص غير موثوقين بالوصول إلى حساب الأدمن؛ Whale يشير إلى إمكانية وجود ثغرة SSTI في صفحة الإعداد.
+
+---
+
 ## 3. الإعداد الأولي لـ CTFd
 
 1. افتح في المتصفح عنوان الموقع (مثلاً `http://YOUR_SERVER_IP` أو الدومين الذي يخدم الـ backend).
 2. اتبع صفحة الإعداد الأولى: إنشاء حساب المدير، اسم المنافسة، إلخ.
 3. بعد الإعداد، يمكنك إدارة التحديات والمستخدمين من لوحة التحكم.
+
+### رفع ملفات/صور للتحديات
+
+لإرفاق ملفات أو صور بتحدي:
+1. ادخل إلى **لوحة التحكم**: `https://YOUR_DOMAIN/admin`
+2. اختر **Challenges** ثم عدّل التحدي أو أنشئ تحدياً جديداً
+3. في تبويب **Files** ارفع الملفات عبر الزر "Upload"
+4. عند النشر الموحد، تأكد أن nginx يمرّر مسار `/admin` إلى الـ backend (ملف `http_with_frontend.conf` يتضمّن ذلك)
 
 ---
 

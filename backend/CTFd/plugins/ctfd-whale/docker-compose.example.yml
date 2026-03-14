@@ -1,3 +1,5 @@
+version: '3.7'
+
 services:
   ctfd:
     build: .
@@ -21,14 +23,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - db
-      - frpc
     networks:
-      - default
-      - internal
-      - frp_connect
+        default:
+        internal:
 
   nginx:
-    image: nginx:stable
+    image: nginx:1.17
     restart: always
     volumes:
       - ./conf/nginx/http.conf:/etc/nginx/nginx.conf
@@ -38,18 +38,17 @@ services:
       - ctfd
 
   db:
-    image: mariadb:10.11
+    image: mariadb:10.4.12
     restart: always
     environment:
-      - MARIADB_ROOT_PASSWORD=ctfd
-      - MARIADB_USER=ctfd
-      - MARIADB_PASSWORD=ctfd
-      - MARIADB_DATABASE=ctfd
-      - MARIADB_AUTO_UPGRADE=1
+      - MYSQL_ROOT_PASSWORD=ctfd
+      - MYSQL_USER=ctfd
+      - MYSQL_PASSWORD=ctfd
+      - MYSQL_DATABASE=ctfd
     volumes:
       - .data/mysql:/var/lib/mysql
     networks:
-      - internal
+        internal:
     # This command is required to set important mariadb defaults
     command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
 
@@ -57,55 +56,50 @@ services:
     image: redis:4
     restart: always
     volumes:
-      - .data/redis:/data
+    - .data/redis:/data
     networks:
-      - internal
+        internal:
 
   frpc:
     image: frankli0324/frp:frpc
     restart: always
-    volumes:
-      - ./conf/frp:/conf
-    entrypoint:
-      - /usr/local/bin/frpc
-      - -c
-      - /conf/frpc.ini
-    depends_on:
-      - frps
+    command: [
+      "--server_addr=frps",
+      "--server_port=7000",
+      "--token=your_token",
+      "--admin_addr=0.0.0.0",
+      "--admin_port=7000",
+      "--admin_user=frank",
+      "--admin_pwd=qwer",
+    ]
     networks:
-      - frp_containers
-      - frp_connect:
-          ipv4_address: 172.1.0.3
+      frp:
+      internal:
+      containers:
 
   frps:
     image: frankli0324/frp:frps
     restart: always
-    volumes:
-      - ./conf/frp:/conf
-    entrypoint:
-      - /usr/local/bin/frps
-      - -c
-      - /conf/frps.ini
+    command: [
+      "--bind_addr=0.0.0.0",
+      "--bind_port=7000",
+      "--token=your_token",
+      "--subdomain_host=127.0.0.1.nip.io",
+      "--vhost_http_port=8080",
+    ]
     ports:
-      - "10000-10100:10000-10100"
-      - "8001:8001"
+      - 8080:8080
     networks:
-      - frp_connect
-      - default
+      frp:
+      default:
 
 networks:
     default:
     internal:
         internal: true
-    frp_connect:
-        driver: overlay
+    frp:
         internal: true
-        ipam:
-            config:
-                - subnet: 172.1.0.0/16
-    frp_containers:
+    containers:
+        internal: true
         driver: overlay
         attachable: true
-        ipam:
-            config:
-                - subnet: 172.2.0.0/16

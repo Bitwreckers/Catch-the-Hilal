@@ -34,3 +34,6 @@ Pillow==12.1.1
 cffi==1.17.1
 six==1.17.0
 urllib3==2.6.0
+# CTFd-Whale plugin
+docker>=4.1.0
+Flask-APScheduler==1.11.0
