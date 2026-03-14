@@ -21,11 +21,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - db
-      - frpc
     networks:
       - default
       - internal
-      - frp_connect
 
   nginx:
     image: nginx:stable
@@ -62,50 +60,29 @@ services:
       - internal
 
   frpc:
-    image: frankli0324/frp:frpc
+    image: snowdreamtech/frpc:latest
     restart: always
     volumes:
       - ./conf/frp:/conf
-    entrypoint:
-      - /usr/local/bin/frpc
-      - -c
-      - /conf/frpc.ini
+    command: -c /conf/frpc.ini
     depends_on:
       - frps
-    networks:
-      - frp_containers
-      - frp_connect:
-          ipv4_address: 172.1.0.3
+    profiles:
+      - whale
 
   frps:
-    image: frankli0324/frp:frps
+    image: snowdreamtech/frps:latest
     restart: always
     volumes:
       - ./conf/frp:/conf
-    entrypoint:
-      - /usr/local/bin/frps
-      - -c
-      - /conf/frps.ini
+    command: -c /conf/frps.ini
     ports:
       - "10000-10100:10000-10100"
       - "8001:8001"
-    networks:
-      - frp_connect
-      - default
+    profiles:
+      - whale
 
 networks:
     default:
     internal:
         internal: true
-    frp_connect:
-        driver: overlay
-        internal: true
-        ipam:
-            config:
-                - subnet: 172.1.0.0/16
-    frp_containers:
-        driver: overlay
-        attachable: true
-        ipam:
-            config:
-                - subnet: 172.2.0.0/16
