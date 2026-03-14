@@ -311,9 +311,9 @@ export function LandingPage() {
             <div className="hero-actions">
               <button
                 className="btn primary"
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/challenges')}
               >
-                Register
+                View Challenges
               </button>
             </div>
             <div className="hero-countdown">
