@@ -62,25 +62,27 @@ services:
   frpc:
     image: snowdreamtech/frpc:latest
     restart: always
+    entrypoint: ["/usr/bin/frpc"]
     volumes:
       - ./conf/frp:/conf
-    command: -c /conf/frpc.ini
+    command: ["-c","/conf/frpc.ini"]
     depends_on:
       - frps
-    profiles:
-      - whale
+    networks:
+      - default
 
   frps:
     image: snowdreamtech/frps:latest
     restart: always
+    entrypoint: ["/usr/bin/frps"]
     volumes:
       - ./conf/frp:/conf
-    command: -c /conf/frps.ini
+    command: ["-c","/conf/frps.ini"]
     ports:
       - "10000-10100:10000-10100"
       - "8001:8001"
-    profiles:
-      - whale
+    networks:
+      - default
 
 networks:
     default:

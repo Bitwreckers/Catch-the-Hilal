@@ -14,7 +14,7 @@ from .utils.control import ControlUtil
 
 class DynamicValueDockerChallenge(BaseChallenge):
     id = "dynamic_docker"  # Unique identifier used to register challenges
-    name = "dynamic_docker"  # Name of a challenge type
+    name = "Dynamic docker"  # Display name shown in Create Challenge
     # Blueprint used to access the static_folder directory.
     blueprint = Blueprint(
         "ctfd-whale-challenge",

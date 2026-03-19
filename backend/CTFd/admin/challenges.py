@@ -116,5 +116,8 @@ def challenges_preview(challenge_id):
 @admin.route("/admin/challenges/new")
 @admins_only
 def challenges_new():
-    types = CHALLENGE_CLASSES.keys()
-    return render_template("admin/challenges/new.html", types=types)
+    types = list(CHALLENGE_CLASSES.keys())
+    types_with_labels = {tid: get_chal_class(tid).name for tid in types}
+    return render_template(
+        "admin/challenges/new.html", types=types, types_with_labels=types_with_labels
+    )

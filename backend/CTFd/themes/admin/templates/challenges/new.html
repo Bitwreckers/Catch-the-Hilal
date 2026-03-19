@@ -88,7 +88,7 @@
 							<span class="card-title">
 								<div class="form-check">
 									<input class="form-check-input card-radio-clone" type="radio" style="visibility: hidden;" checked>
-									<span class="form-check-label">{{ type }}</span>
+									<span class="form-check-label">{{ types_with_labels[type] if types_with_labels and type in types_with_labels else type }}</span>
 								</div>
 							</span>
 						</div>
