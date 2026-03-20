@@ -3,6 +3,9 @@ FROM node:20-alpine AS build
 # Backend API URL (no trailing slash). Required when frontend and backend are on different domains.
 ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+# Optional: CTF start time (ISO 8601, e.g. 2025-03-22T07:00:00Z for 10 AM Jordan)
+ARG VITE_CTF_START_TIME=
+ENV VITE_CTF_START_TIME=${VITE_CTF_START_TIME}
 
 WORKDIR /app
 COPY package*.json ./
