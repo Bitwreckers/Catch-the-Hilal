@@ -1,5 +1,3 @@
-import { getBackendBaseUrl } from './client'
-
 export interface CtfTimeResponse {
   success: boolean
   data: {
@@ -9,13 +7,11 @@ export interface CtfTimeResponse {
 }
 
 /**
- * Fetches CTF start/end times from admin config (public endpoint).
- * Used for the "Event starts in" countdown on the landing page.
- * Uses native fetch with credentials: 'include' for cross-origin CORS + cookies.
+ * Fetches CTF start/end times from admin config.
+ * Uses /api/v1/ctf (proxied via nginx on same domain) to avoid CORS.
  */
 export async function getCtfTime(): Promise<{ start: string | null; end: string | null }> {
-  const base = getBackendBaseUrl()
-  const url = base ? `${base}/api/v1/ctf?_t=${Date.now()}` : `/api/v1/ctf?_t=${Date.now()}`
+  const url = `/api/v1/ctf?_t=${Date.now()}`
   try {
     const res = await fetch(url, {
       method: 'GET',

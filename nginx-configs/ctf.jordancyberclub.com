@@ -8,6 +8,16 @@ server {
 
     client_max_body_size 100M;
 
+    # proxy API to backend (لتجنب CORS و جلب أوقات الحدث)
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_redirect off;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:4173;
 
