@@ -8,28 +8,22 @@ import { getCtfTime } from '../api/ctf'
 import crescentMoonImg from '../assets/crescent-moon.png'
 import jsLogoImg from '../assets/jslogo.png'
 
-const FALLBACK_START = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString()
-
 type CountdownState =
   | { mode: 'starts'; target: string; label: string }
   | { mode: 'ends'; target: string; label: string }
   | { mode: 'ended'; label: string }
+  | { mode: 'tbd'; label: string }
 
+/** يعتمد فقط على إعدادات الأدمن: Config → Start and End Time */
 function computeCountdownState(start: string | null, end: string | null): CountdownState {
   const now = Date.now()
   const startMs = start ? new Date(start).getTime() : 0
   const endMs = end ? new Date(end).getTime() : 0
 
-  if (start && startMs > now) {
-    return { mode: 'starts', target: start, label: 'Event starts in' }
-  }
-  if (end && endMs > now) {
-    return { mode: 'ends', target: end, label: 'Event ends in' }
-  }
-  if ((start && startMs <= now) || (end && endMs <= now)) {
-    return { mode: 'ended', label: 'Event has ended' }
-  }
-  return { mode: 'starts', target: FALLBACK_START, label: 'Event starts in' }
+  if (start && startMs > now) return { mode: 'starts', target: start, label: 'Event starts in' }
+  if (end && endMs > now) return { mode: 'ends', target: end, label: 'Event ends in' }
+  if ((start && startMs <= now) || (end && endMs <= now)) return { mode: 'ended', label: 'Event has ended' }
+  return { mode: 'tbd', label: 'Event time will be announced' }
 }
 
 /* Four moons at the corner positions; some flipped, some with scroll parallax */
@@ -50,20 +44,16 @@ export function LandingPage() {
   const heroRef = useRef<HTMLDivElement | null>(null)
   const moonsRef = useRef<HTMLDivElement | null>(null)
   const prefersReduced = usePrefersReducedMotion()
-  const [ctfStart, setCtfStart] = useState<string | null>(() =>
-    import.meta.env.VITE_CTF_START_TIME || null
-  )
+  const [ctfStart, setCtfStart] = useState<string | null>(null)
   const [ctfEnd, setCtfEnd] = useState<string | null>(null)
 
   const countdownState = computeCountdownState(ctfStart, ctfEnd)
 
   const fetchCtfTime = () => {
-    getCtfTime()
-      .then(({ start, end }) => {
-        if (start != null) setCtfStart(start)
-        if (end != null) setCtfEnd(end)
-      })
-      .catch(() => {})
+    getCtfTime().then(({ start, end }) => {
+      setCtfStart(start ?? null)
+      setCtfEnd(end ?? null)
+    })
   }
 
   useEffect(() => {
@@ -322,6 +312,8 @@ export function LandingPage() {
                   <h2>{countdownState.label}</h2>
                   {countdownState.mode === 'ended' ? (
                     <p className="hero-countdown-ended">Event has ended</p>
+                  ) : countdownState.mode === 'tbd' ? (
+                    <p className="hero-countdown-ended">Event time will be announced</p>
                   ) : (
                     <CountdownTimer target={countdownState.target} />
                   )}
