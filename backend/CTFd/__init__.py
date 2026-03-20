@@ -328,7 +328,7 @@ def create_app(config="CTFd.config.Config"):
             response.headers.setdefault("Access-Control-Allow-Origin", origin)
             response.headers.setdefault(
                 "Access-Control-Allow-Headers",
-                "Content-Type, Authorization, X-Requested-With",
+                "Content-Type, Authorization, X-Requested-With, CSRF-Token",
             )
             response.headers.setdefault(
                 "Access-Control-Allow-Methods",

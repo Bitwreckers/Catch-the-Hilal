@@ -6,6 +6,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - SECRET_KEY=${SECRET_KEY}
       - UPLOAD_FOLDER=/var/uploads
       - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
       - REDIS_URL=redis://cache:6379
@@ -14,6 +15,8 @@ services:
       - ACCESS_LOG=-
       - ERROR_LOG=-
       - REVERSE_PROXY=true
+      # For cross-domain frontend: set to your frontend URL, e.g. https://ctf.example.com
+      - FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-*}
     volumes:
       - .data/CTFd/logs:/var/log/CTFd
       - .data/CTFd/uploads:/var/uploads
