@@ -1,4 +1,4 @@
-import { apiClient, getBackendBaseUrl } from './client'
+import { getBackendBaseUrl } from './client'
 
 export interface CtfTimeResponse {
   success: boolean
@@ -11,17 +11,22 @@ export interface CtfTimeResponse {
 /**
  * Fetches CTF start/end times from admin config (public endpoint).
  * Used for the "Event starts in" countdown on the landing page.
- * Uses backend URL when set so the request always hits the CTFd API.
+ * Uses native fetch with credentials: 'include' for cross-origin CORS + cookies.
  */
 export async function getCtfTime(): Promise<{ start: string | null; end: string | null }> {
   const base = getBackendBaseUrl()
-  const url = base ? `${base}/api/v1/ctf` : '/api/v1/ctf'
-  const res = await apiClient.get<CtfTimeResponse>(url, {
-    params: { _t: Date.now() },
-    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-  })
-  if (!res.data?.success || !res.data?.data) {
+  const url = base ? `${base}/api/v1/ctf?_t=${Date.now()}` : `/api/v1/ctf?_t=${Date.now()}`
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    })
+    if (!res.ok) return { start: null, end: null }
+    const json: CtfTimeResponse = await res.json()
+    if (!json?.success || !json?.data) return { start: null, end: null }
+    return json.data
+  } catch {
     return { start: null, end: null }
   }
-  return res.data.data
 }
