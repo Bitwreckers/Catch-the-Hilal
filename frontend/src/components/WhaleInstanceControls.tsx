@@ -122,27 +122,39 @@ export function WhaleInstanceControls({
         <div className="whale-instance-active">
           {container.user_access && (
             <div className="whale-instance-access">
-              {container.user_access.startsWith('http') ? (
-                <a
-                  href={container.user_access}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="whale-instance-link"
-                >
-                  Open connection
-                </a>
-              ) : (
-                <code className="whale-instance-code">{container.user_access}</code>
-              )}
-              {!container.user_access.startsWith('http') && (
-                <button
-                  type="button"
-                  className="btn ghost whale-instance-copy"
-                  onClick={() => navigator.clipboard?.writeText(container.user_access ?? '')}
-                >
-                  Copy
-                </button>
-              )}
+              {(() => {
+                const access = container.user_access
+                const urlMatch = access.match(/href=["']([^"']+)["']/) || (access.startsWith('http') ? [null, access] : null)
+                const instanceUrl = urlMatch?.[1] ?? (access.startsWith('http') ? access : null)
+                if (instanceUrl) {
+                  return (
+                    <a
+                      href={instanceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="whale-instance-link"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        window.open(instanceUrl, '_blank', 'noopener,noreferrer')
+                      }}
+                    >
+                      Open connection
+                    </a>
+                  )
+                }
+                return (
+                  <>
+                    <code className="whale-instance-code">{access}</code>
+                    <button
+                      type="button"
+                      className="btn ghost whale-instance-copy"
+                      onClick={() => navigator.clipboard?.writeText(access ?? '')}
+                    >
+                      Copy
+                    </button>
+                  </>
+                )
+              })()}
             </div>
           )}
           {typeof container.remaining_time === 'number' && container.remaining_time >= 0 && (
