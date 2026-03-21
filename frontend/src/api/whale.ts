@@ -31,7 +31,7 @@ export async function startWhaleContainer(
 ): Promise<WhaleContainerResponse> {
   const res = await apiClient.post<WhaleContainerResponse>(
     WHALE_PATH,
-    null,
+    {},
     {
       params: { challenge_id: challengeId },
       validateStatus: (s) => s === 200 || s === 403,
@@ -44,7 +44,7 @@ export async function startWhaleContainer(
 export async function renewWhaleContainer(
   challengeId: number
 ): Promise<WhaleContainerResponse> {
-  const res = await apiClient.patch<WhaleContainerResponse>(WHALE_PATH, null, {
+  const res = await apiClient.patch<WhaleContainerResponse>(WHALE_PATH, {}, {
     params: { challenge_id: challengeId },
     validateStatus: (s) => s === 200 || s === 403,
   })
