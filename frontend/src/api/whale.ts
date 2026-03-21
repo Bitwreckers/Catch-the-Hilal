@@ -54,6 +54,7 @@ export async function renewWhaleContainer(
 /** DELETE — destroy the current container */
 export async function destroyWhaleContainer(): Promise<WhaleContainerResponse> {
   const res = await apiClient.delete<WhaleContainerResponse>(WHALE_PATH, {
+    data: {},
     validateStatus: (s) => s === 200 || s === 403,
   })
   return res.data
