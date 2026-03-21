@@ -1,15 +1,13 @@
 import axios from 'axios'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL?.toString() || '/'
-
-/** Base URL for the backend (no trailing slash). Use for file/download links so they hit the backend. */
+/** Base URL for the backend (no trailing slash). Used for file/download links. */
 export function getBackendBaseUrl(): string {
   const base = import.meta.env.VITE_API_BASE_URL?.toString() || ''
   return base ? base.replace(/\/$/, '') : ''
 }
 
 export const apiClient = axios.create({
-  baseURL,
+  baseURL: '/',
   withCredentials: true,
 })
 
@@ -17,9 +15,8 @@ let cachedNonce: string | null = null
 
 export async function getSessionNonce(): Promise<string> {
   if (cachedNonce) return cachedNonce
-  const authPath = import.meta.env.VITE_API_BASE_URL ? '/login' : '/ctfd-auth/login'
-  const res = await axios.get(authPath, {
-    baseURL,
+  const res = await axios.get('/ctfd-auth/login', {
+    baseURL: '/',
     withCredentials: true,
     responseType: 'text',
   })

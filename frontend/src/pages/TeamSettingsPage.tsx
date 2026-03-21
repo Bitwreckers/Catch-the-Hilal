@@ -31,7 +31,7 @@ interface TeamInfo {
   country?: string | null
 }
 
-const INVITE_PATH = import.meta.env.VITE_API_BASE_URL ? '/teams/invite' : '/ctfd-auth/teams/invite'
+const INVITE_PATH = '/ctfd-auth/teams/invite'
 
 export function TeamSettingsPage() {
   const { user, loading: authLoading } = useAuth()
@@ -142,9 +142,7 @@ export function TeamSettingsPage() {
 
   function getInviteUrl() {
     if (!inviteCode) return ''
-    const base = import.meta.env.VITE_API_BASE_URL
-      ? (import.meta.env.VITE_API_BASE_URL as string).replace(/\/$/, '')
-      : window.location.origin
+    const base = window.location.origin
     return base + INVITE_PATH + '?code=' + encodeURIComponent(inviteCode)
   }
 

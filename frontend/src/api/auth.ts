@@ -22,8 +22,7 @@ export interface UpdateMePayload {
   confirm?: string
 }
 
-// In dev we use /ctfd-auth so Vite proxy always hits CTFd (not SPA). In production, use same path as API.
-const AUTH_PREFIX = import.meta.env.VITE_API_BASE_URL ? '' : '/ctfd-auth'
+const AUTH_PREFIX = '/ctfd-auth'
 const AUTH_LOGIN = `${AUTH_PREFIX}/login`
 const AUTH_REGISTER = `${AUTH_PREFIX}/register`
 const AUTH_LOGOUT = `${AUTH_PREFIX}/logout`

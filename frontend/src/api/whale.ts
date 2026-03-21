@@ -1,11 +1,6 @@
-import { apiClient, getBackendBaseUrl } from './client'
+import { apiClient } from './client'
 
 const WHALE_PATH = '/api/v1/plugins/ctfd-whale/container'
-
-function whaleUrl(): string {
-  const base = getBackendBaseUrl()
-  return base ? `${base}${WHALE_PATH}` : WHALE_PATH
-}
 
 export interface WhaleContainerData {
   lan_domain?: string
@@ -23,7 +18,7 @@ export interface WhaleContainerResponse {
 export async function getWhaleContainer(
   challengeId: number
 ): Promise<WhaleContainerResponse> {
-  const res = await apiClient.get<WhaleContainerResponse>(whaleUrl(), {
+  const res = await apiClient.get<WhaleContainerResponse>(WHALE_PATH, {
     params: { challenge_id: challengeId },
     validateStatus: (s) => s === 200 || s === 403,
   })
@@ -35,7 +30,7 @@ export async function startWhaleContainer(
   challengeId: number
 ): Promise<WhaleContainerResponse> {
   const res = await apiClient.post<WhaleContainerResponse>(
-    whaleUrl(),
+    WHALE_PATH,
     null,
     {
       params: { challenge_id: challengeId },
@@ -49,7 +44,7 @@ export async function startWhaleContainer(
 export async function renewWhaleContainer(
   challengeId: number
 ): Promise<WhaleContainerResponse> {
-  const res = await apiClient.patch<WhaleContainerResponse>(whaleUrl(), null, {
+  const res = await apiClient.patch<WhaleContainerResponse>(WHALE_PATH, null, {
     params: { challenge_id: challengeId },
     validateStatus: (s) => s === 200 || s === 403,
   })
@@ -58,7 +53,7 @@ export async function renewWhaleContainer(
 
 /** DELETE — destroy the current container */
 export async function destroyWhaleContainer(): Promise<WhaleContainerResponse> {
-  const res = await apiClient.delete<WhaleContainerResponse>(whaleUrl(), {
+  const res = await apiClient.delete<WhaleContainerResponse>(WHALE_PATH, {
     validateStatus: (s) => s === 200 || s === 403,
   })
   return res.data

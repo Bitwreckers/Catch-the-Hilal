@@ -27,7 +27,7 @@ export async function getMyTeamMembers(): Promise<{ id: number; name: string }[]
   })
 }
 
-const TEAMS_PREFIX = import.meta.env.VITE_API_BASE_URL ? '' : '/ctfd-auth'
+const TEAMS_PREFIX = '/ctfd-auth'
 const TEAMS_NEW = `${TEAMS_PREFIX}/teams/new`
 const TEAMS_JOIN = `${TEAMS_PREFIX}/teams/join`
 
