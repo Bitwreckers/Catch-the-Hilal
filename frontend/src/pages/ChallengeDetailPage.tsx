@@ -2,7 +2,7 @@ import type { FormEvent } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getChallenge, submitFlag, unlockHint, normalizeTag, type ChallengeHint } from '../api/challenges'
+import { getChallenge, submitFlag, unlockHint, normalizeTag, type ChallengeHint, type ChallengeTag } from '../api/challenges'
 import { getBackendBaseUrl } from '../api/client'
 import { ChallengeDetailSkeleton } from '../components/ChallengeDetailSkeleton'
 import { WhaleInstanceControls } from '../components/WhaleInstanceControls'
@@ -20,7 +20,7 @@ interface ChallengeDetails {
   solved_by_me?: boolean
   hints?: ChallengeHint[]
   files?: string[]
-  tags?: string[]
+  tags?: Array<string | ChallengeTag>
   topics?: Array<{ topic_id?: number; value?: string }>
   attribution?: string
   attribution_html?: string
