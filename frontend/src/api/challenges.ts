@@ -17,6 +17,10 @@ export interface ChallengeHint {
   content?: string
 }
 
+export interface ChallengeTag {
+  value: string
+}
+
 export interface ChallengeDetailResponse {
   id: number
   name: string
@@ -29,7 +33,7 @@ export interface ChallengeDetailResponse {
   solved_by_me?: boolean
   hints?: ChallengeHint[]
   files?: string[]
-  tags?: string[]
+  tags?: Array<string | ChallengeTag>
   topics?: Array<{ topic_id?: number; value?: string }>
   attribution?: string
   attribution_html?: string
@@ -38,6 +42,12 @@ export interface ChallengeDetailResponse {
   max_attempts?: number
   attempts?: number
   [key: string]: unknown
+}
+
+export function normalizeTag(tag: string | ChallengeTag): string {
+  if (typeof tag === 'string') return tag
+  if (tag && typeof tag === 'object' && 'value' in tag) return tag.value
+  return String(tag)
 }
 
 export async function getChallenge(id: number): Promise<ChallengeDetailResponse> {

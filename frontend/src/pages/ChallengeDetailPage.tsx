@@ -2,7 +2,7 @@ import type { FormEvent } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getChallenge, submitFlag, unlockHint, type ChallengeHint } from '../api/challenges'
+import { getChallenge, submitFlag, unlockHint, normalizeTag, type ChallengeHint } from '../api/challenges'
 import { getBackendBaseUrl } from '../api/client'
 import { ChallengeDetailSkeleton } from '../components/ChallengeDetailSkeleton'
 import { WhaleInstanceControls } from '../components/WhaleInstanceControls'
@@ -305,7 +305,7 @@ export function ChallengeDetailPage() {
           <div className="challenge-tags-list">
             {tags.map((tag, i) => (
               <span key={i} className="challenge-tag-pill">
-                {tag}
+                {normalizeTag(tag)}
               </span>
             ))}
           </div>

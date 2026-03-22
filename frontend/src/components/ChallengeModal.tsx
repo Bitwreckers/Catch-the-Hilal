@@ -4,7 +4,10 @@ import {
   getChallenge,
   getChallengeSolves,
   submitFlag,
+  unlockHint,
+  normalizeTag,
   type ChallengeDetailResponse,
+  type ChallengeHint,
   type ChallengeSolve,
 } from '../api/challenges'
 import { getBackendBaseUrl } from '../api/client'
@@ -60,6 +63,7 @@ export function ChallengeModal({ challengeId, onClose, onSolved, initialData }: 
   const [solvesLoading, setSolvesLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'challenge' | 'solves'>('challenge')
   const [loadError, setLoadError] = useState(false)
+  const [unlockingHintId, setUnlockingHintId] = useState<number | null>(null)
 
   const loadChallenge = useCallback(async () => {
     if (!initialData) setLoading(true)
@@ -118,6 +122,19 @@ export function ChallengeModal({ challengeId, onClose, onSolved, initialData }: 
       setSolves([])
     } finally {
       setSolvesLoading(false)
+    }
+  }
+
+  async function handleUnlockHint(hint: ChallengeHint) {
+    if (hint.content != null) return
+    setUnlockingHintId(hint.id)
+    try {
+      await unlockHint(hint.id)
+      await loadChallenge()
+    } catch {
+      // will refresh on next load
+    } finally {
+      setUnlockingHintId(null)
     }
   }
 
@@ -213,6 +230,56 @@ export function ChallengeModal({ challengeId, onClose, onSolved, initialData }: 
                   <p className="challenge-modal-description-text challenge-modal-description-text--muted">No description.</p>
                 )}
               </div>
+
+              {!detailsLoading && (() => {
+                const tags = Array.isArray(challenge.tags) ? challenge.tags : []
+                const hints = Array.isArray(challenge.hints) ? challenge.hints : []
+                return (
+                  <>
+                    {tags.length > 0 && (
+                      <section className="challenge-modal-section">
+                        <h3 className="challenge-modal-section-title">Tags</h3>
+                        <div className="challenge-tags-list">
+                          {tags.map((tag, i) => (
+                            <span key={i} className="challenge-tag-pill">{normalizeTag(tag)}</span>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                    {hints.length > 0 && (
+                      <section className="challenge-modal-section">
+                        <h3 className="challenge-modal-section-title">Hints</h3>
+                        <ul className="challenge-hints-list">
+                          {hints.map((h) => (
+                            <li key={h.id} className={`challenge-hint-item ${h.content != null ? 'challenge-hint-unlocked' : ''}`}>
+                              <div className="challenge-hint-header">
+                                <span className="challenge-hint-title">{h.title || `Hint`}</span>
+                                {h.cost > 0 && <span className="challenge-hint-cost">{h.cost} pts</span>}
+                              </div>
+                              {h.content != null ? (
+                                typeof h.content === 'string' && h.content.includes('<') ? (
+                                  <div className="challenge-hint-content" dangerouslySetInnerHTML={{ __html: h.content }} />
+                                ) : (
+                                  <div className="challenge-hint-content">{String(h.content)}</div>
+                                )
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="btn ghost challenge-hint-unlock-btn"
+                                  disabled={unlockingHintId === h.id}
+                                  onClick={() => handleUnlockHint(h)}
+                                >
+                                  {unlockingHintId === h.id ? 'Unlocking...' : `Unlock hint${h.cost > 0 ? ` (${h.cost} pts)` : ''}`}
+                                </button>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                  </>
+                )
+              })()}
 
               {!detailsLoading && challenge.type === 'dynamic_docker' && (
                 <WhaleInstanceControls
