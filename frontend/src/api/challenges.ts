@@ -50,9 +50,22 @@ export function normalizeTag(tag: string | ChallengeTag): string {
   return String(tag)
 }
 
+/** Normalize challenge from API - ensure hints/tags are always arrays */
+function normalizeChallenge(raw: ChallengeDetailResponse): ChallengeDetailResponse {
+  const rawHints = raw?.hints
+  const hintsArr: ChallengeHint[] = Array.isArray(rawHints)
+    ? rawHints.filter((h): h is ChallengeHint => h != null && typeof h === 'object' && 'id' in h && 'title' in h)
+    : []
+  const rawTags = raw?.tags
+  const tagsArr = Array.isArray(rawTags) ? rawTags : []
+  return { ...raw, hints: hintsArr, tags: tagsArr }
+}
+
 export async function getChallenge(id: number): Promise<ChallengeDetailResponse> {
   const res = await apiClient.get<{ success: boolean; data: ChallengeDetailResponse }>(`/api/v1/challenges/${id}`)
-  return res.data.data
+  const data = res.data?.data
+  if (!data) throw new Error('Invalid challenge response')
+  return normalizeChallenge(data)
 }
 
 /** POST /api/v1/challenges/attempt — body: { challenge_id: number, submission: string }. Returns { success, data: { status, message } }. */
