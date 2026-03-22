@@ -24,7 +24,7 @@ export function RulesPage() {
         <div className="rules-section">
           <h2>Flags &amp; scoring</h2>
           <ul>
-            <li>Flags typically follow the format CTF&#123;...&#125; unless a challenge states otherwise.</li>
+            <li>Flags typically follow the format JCChilal&#123;...&#125; unless a challenge states otherwise.</li>
             <li>Do not share flags across teams or leak them publicly during the event.</li>
             <li>Points are awarded per valid submission; ties may be broken by submission time.</li>
           </ul>
